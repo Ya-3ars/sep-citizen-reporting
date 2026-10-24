@@ -1,0 +1,60 @@
+.dashboard {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.dashboard-header button {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.state {
+  color: #555;
+}
+
+.state.error {
+  background: #fff4f4;
+  border: 1px solid #f0c0c0;
+  border-radius: 6px;
+  padding: 1rem;
+  color: #a33;
+}
+
+.state .hint {
+  color: #777;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+table.reports {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.reports th,
+table.reports td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+table.reports th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #888;
+}
