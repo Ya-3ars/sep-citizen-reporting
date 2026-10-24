@@ -1,0 +1,12 @@
+# OS
+.DS_Store
+
+# Local backups — not for the public repo
+platform-comparison.backup.html
+platform-comparison.backup2.html
+
+# Course PDFs — not source
+*.pdf
+
+# Claude local working dir
+.claude/

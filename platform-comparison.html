@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platform Decision — SEP WS 2026/27</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --web:     #667eea;
+  --desktop: #f09319;
+  --mobile:  #11998e;
+  --hybrid:  #c35bd1;
+  --bg:      #f2f3f7;
+  --surface: #ffffff;
+  --border:  #e4e6ed;
+  --text:    #1a1a2e;
+  --muted:   #6b7280;
+  --green:   #16a34a;
+  --red:     #dc2626;
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+html { overflow-y: scroll; }
+
+/* ── HEADER ── */
+header { background: var(--text); color: white; padding: 24px 36px; display: flex; align-items: baseline; gap: 20px; }
+header h1 { font-size: 1.25rem; font-weight: 700; }
+header span { color: #8899bb; font-size: 0.85rem; }
+
+/* ── NAV TABS ── */
+.tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 36px; display: flex; gap: 4px; }
+.tab { padding: 12px 18px; font-size: 0.85rem; font-weight: 500; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: #6c63ff; border-bottom-color: #6c63ff; }
+.tab[data-view="web"].active    { color: var(--web);     border-bottom-color: var(--web); }
+.tab[data-view="desktop"].active{ color: var(--desktop); border-bottom-color: var(--desktop); }
+.tab[data-view="mobile"].active { color: var(--mobile);  border-bottom-color: var(--mobile); }
+.tab[data-view="hybrid"].active { color: var(--hybrid);  border-bottom-color: var(--hybrid); }
+
+/* ── TOOLBAR ── */
+.toolbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 36px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.toolbar-label { font-size: 0.8rem; color: var(--muted); }
+.chip { padding: 5px 14px; border-radius: 16px; border: 1.5px solid var(--border); background: var(--surface); font-size: 0.8rem; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+.chip:hover { border-color: #6c63ff; color: #6c63ff; }
+.chip.sel { background: #6c63ff; border-color: #6c63ff; color: white; }
+.chip[data-p="web"].sel    { background: var(--web);     border-color: var(--web); }
+.chip[data-p="desktop"].sel{ background: var(--desktop); border-color: var(--desktop); }
+.chip[data-p="mobile"].sel { background: var(--mobile);  border-color: var(--mobile); }
+.chip[data-p="hybrid"].sel { background: var(--hybrid);  border-color: var(--hybrid); }
+.sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+/* ── MAIN ── */
+.main { padding: 24px 36px; max-width: 1600px; margin: 0 auto; }
+
+/* ── CARDS GRID ── */
+.cards-grid { display: grid; gap: 18px; grid-template-columns: repeat(4, 1fr); }
+.cards-grid.two-col   { grid-template-columns: repeat(2, 1fr); }
+.cards-grid.three-col { grid-template-columns: repeat(3, 1fr); }
+
+.card {
+  background: var(--surface);
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.15s;
+  cursor: default;
+}
+.card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.1); }
+.card.hidden { display: none; }
+
+.card-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+.card[data-p="web"]    .card-header { background: #667eea12; border-bottom: 2px solid #667eea30; }
+.card[data-p="desktop"].card-header { background: #f0931912; border-bottom: 2px solid #f0931930; }
+.card[data-p="mobile"] .card-header { background: #11998e12; border-bottom: 2px solid #11998e30; }
+.card[data-p="hybrid"] .card-header { background: #c35bd112; border-bottom: 2px solid #c35bd130; }
+.card-icon { font-size: 1.6rem; }
+.card-name { font-size: 1rem; font-weight: 700; }
+.card-sub  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.badge { margin-left: auto; font-size: 0.65rem; font-weight: 700; padding: 3px 9px; border-radius: 12px; letter-spacing: 0.04em; white-space: nowrap; }
+.badge-rec  { background: #6c63ff; color: white; }
+.badge-high { background: #dc262618; color: var(--red); }
+.badge-combo{ background: #c35bd118; color: var(--hybrid); }
+
+/* ── SECTION ── */
+.section { padding: 14px 20px; border-top: 1px solid #f0f0f6; }
+.sec-title { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: #aaa; margin-bottom: 10px; }
+
+/* ── TAGS ── */
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { padding: 3px 9px; border-radius: 5px; font-size: 0.73rem; font-weight: 500; }
+.t-lang { background: #eef; color: #446; }
+.t-fw   { background: #efe; color: #363; }
+.t-db   { background: #fef3e2; color: #863; }
+.t-map  { background: #e8f4fd; color: #256; }
+.t-warn { background: #fef2f2; color: #991b1b; }
+
+/* ── SCORES ── */
+.scores { display: flex; flex-direction: column; gap: 9px; }
+.sc-row { display: grid; grid-template-columns: 130px 1fr 36px; align-items: center; gap: 8px; }
+.sc-label { font-size: 0.76rem; color: var(--muted); }
+.sc-track { background: #f0f0f6; border-radius: 4px; height: 7px; overflow: visible; position: relative; }
+.sc-bar   { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.card[data-p="web"]    .sc-bar { background: var(--web); }
+.card[data-p="desktop"].sc-bar { background: var(--desktop); }
+.card[data-p="mobile"] .sc-bar { background: var(--mobile); }
+.card[data-p="hybrid"] .sc-bar { background: var(--hybrid); }
+.sc-num { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-align: right; }
+.sc-best .sc-bar::after { content: "★"; position: absolute; right: -16px; top: -6px; font-size: 0.75rem; color: #f59e0b; }
+
+/* ── PROS CONS ── */
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pc-head { font-size: 0.72rem; font-weight: 700; margin-bottom: 6px; }
+.pc-head.g { color: var(--green); }
+.pc-head.r { color: var(--red); }
+.pc-item { font-size: 0.77rem; color: #444; padding-left: 13px; position: relative; margin-bottom: 5px; line-height: 1.35; }
+.pc-item.g::before { content: "+"; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+.pc-item.r::before { content: "−"; position: absolute; left: 0; color: var(--red); font-weight: 700; }
+
+/* ── ARCHITECTURE (overview cards — diagram only) ── */
+.arch-diagram {
+  background: #f7f8fc; border-radius: 8px; padding: 12px 14px;
+  font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.72rem;
+  line-height: 1.75; color: #334; white-space: pre; overflow-x: auto;
+}
+
+/* ── KNOWLEDGE ── */
+.k-legend { display: flex; gap: 12px; margin-bottom: 8px; }
+.k-leg { font-size: 0.7rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dk { background: var(--green); }
+.dl { background: #f59e0b; }
+.dh { background: var(--red); }
+.k-list { list-style: none; }
+.k-list li { font-size: 0.78rem; padding: 5px 0; border-bottom: 1px solid #f4f4f8; display: flex; align-items: center; gap: 8px; color: #444; }
+.k-list li:last-child { border-bottom: none; }
+
+/* ── REQUIREMENTS TABLE ── */
+.req-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; table-layout: fixed; }
+.req-table th { background: #f7f8fc; padding: 9px 12px; text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; border-bottom: 2px solid var(--border); white-space: nowrap; }
+.req-table th.center { text-align: center; }
+.req-table td { padding: 9px 12px; border-bottom: 1px solid #f4f4f8; vertical-align: middle; }
+.req-table tr:last-child td { border-bottom: none; }
+.req-table tr:hover td { background: #fafafa; }
+.req-name { font-weight: 600; color: var(--text); }
+.req-desc { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
+.req-cell { text-align: center; }
+.fit { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fit-good  { color: #374151; }
+.fit-ok    { background: #fef9c3; color: #854d0e; }
+.fit-poor  { background: #fee2e2; color: #991b1b; }
+.fit-great { color: #374151; }
+
+/* source / type / role / priority badges */
+.src-badge { display: inline-block; font-size: 0.67rem; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; letter-spacing: 0.02em; }
+.src-assigned { background: #dbeafe; color: #1e40af; }
+.src-implied  { background: #fef9c3; color: #854d0e; }
+.src-ext      { background: #f3e8ff; color: #6b21a8; }
+.type-badge, .role-badge, .pri-badge { display: inline-block; font-size: 0.67rem; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
+.type-func { background: #e0f2fe; color: #0369a1; }
+.type-tech { background: #fce7f3; color: #9d174d; }
+.role-citizen { background: #ecfdf5; color: #065f46; }
+.role-staff   { background: #eff6ff; color: #1e40af; }
+.role-both    { background: #f5f3ff; color: #5b21b6; }
+.pri-core { background: #fef3c7; color: #92400e; }
+.pri-opt  { background: #f1f5f9; color: #475569; }
+
+/* ── REQ FILTER BAR ── */
+.req-filter-bar { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 12px 16px; margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.req-filter-group { display: flex; align-items: center; gap: 6px; }
+.req-filter-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.req-filter-sep { width: 1px; height: 22px; background: var(--border); }
+
+/* empty state */
+.req-empty { text-align: center; padding: 32px; color: var(--muted); font-size: 0.85rem; background: white; border-radius: 12px; border: 1px solid var(--border); margin-top: 0; }
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── SECTION VISIBILITY ── */
+.section[data-sec] { }
+
+/* ── DETAIL PAGE ── */
+.detail-page { display: flex; flex-direction: column; gap: 28px; }
+
+.detail-hero {
+  background: var(--surface); border-radius: 12px; border: 2px solid var(--border);
+  padding: 28px 32px; display: flex; align-items: center; gap: 20px;
+}
+.detail-hero-icon { font-size: 2.8rem; flex-shrink: 0; }
+.detail-hero-title { font-size: 1.4rem; font-weight: 700; }
+.detail-hero-sub { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.detail-hero-badge { margin-left: auto; font-size: 0.7rem; font-weight: 700; padding: 5px 14px; border-radius: 14px; white-space: nowrap; }
+
+.view[id^="view-web"]     .detail-hero { border-color: #667eea40; background: #667eea08; }
+.view[id^="view-desktop"] .detail-hero { border-color: #f0931940; background: #f0931908; }
+.view[id^="view-mobile"]  .detail-hero { border-color: #11998e40; background: #11998e08; }
+.view[id^="view-hybrid"]  .detail-hero { border-color: #c35bd140; background: #c35bd108; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.detail-grid.single { grid-template-columns: 1fr; }
+
+.detail-card {
+  background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
+  overflow: hidden;
+}
+.detail-card-header {
+  padding: 14px 20px; background: #f7f8fc; border-bottom: 1px solid var(--border);
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: #888;
+}
+.detail-card-body { padding: 18px 20px; }
+
+/* tech table */
+.tech-table { width: 100%; border-collapse: collapse; }
+.tech-table tr { border-bottom: 1px solid #f0f0f6; }
+.tech-table tr:last-child { border-bottom: none; }
+.tech-table td { padding: 9px 4px; vertical-align: top; font-size: 0.82rem; }
+.tech-table td:first-child { width: 130px; font-weight: 600; color: var(--muted); font-size: 0.75rem; padding-right: 12px; padding-top: 11px; }
+.tech-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* component list */
+.comp-list { display: flex; flex-direction: column; gap: 14px; }
+.comp-item { display: flex; gap: 14px; align-items: flex-start; }
+.comp-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+.comp-name { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.comp-desc { font-size: 0.8rem; color: #555; line-height: 1.5; }
+.comp-detail { font-size: 0.77rem; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+.comp-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+/* arch diagram — wider in detail view */
+.detail-arch-diagram {
+  background: #f7f8fc; border-radius: 8px; padding: 16px 18px;
+  font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.76rem;
+  line-height: 1.8; color: #334; white-space: pre; overflow-x: auto;
+}
+
+/* flow steps */
+.flow-steps { display: flex; flex-direction: column; gap: 0; }
+.flow-step { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #f0f0f6; }
+.flow-step:last-child { border-bottom: none; }
+.flow-num { width: 24px; height: 24px; border-radius: 50%; background: #6c63ff18; color: #6c63ff; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.view[id="view-web"]     .flow-num { background: #667eea18; color: var(--web); }
+.view[id="view-desktop"] .flow-num { background: #f0931918; color: var(--desktop); }
+.view[id="view-mobile"]  .flow-num { background: #11998e18; color: var(--mobile); }
+.view[id="view-hybrid"]  .flow-num { background: #c35bd118; color: var(--hybrid); }
+.flow-title { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.flow-desc  { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+/* data model table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.data-table th { background: #f7f8fc; padding: 7px 10px; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; border-bottom: 2px solid var(--border); }
+.data-table td { padding: 7px 10px; border-bottom: 1px solid #f4f4f8; color: #444; }
+.data-table tr:last-child td { border-bottom: none; }
+.col-type { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.72rem; color: #6c63ff; }
+.col-note { font-size: 0.72rem; color: var(--muted); }
+
+/* warning / info callout */
+.callout { border-radius: 8px; padding: 12px 16px; font-size: 0.8rem; line-height: 1.5; display: flex; gap: 10px; align-items: flex-start; }
+.callout-warn { background: #fef9c3; border-left: 3px solid #d97706; color: #78350f; }
+.callout-info { background: #eff6ff; border-left: 3px solid #3b82f6; color: #1e40af; }
+.callout-danger { background: #fee2e2; border-left: 3px solid #dc2626; color: #7f1d1d; }
+.callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+/* ── PROJECT VIEW ── */
+.project-page { display: flex; flex-direction: column; gap: 28px; }
+
+/* sprint timeline */
+.sprint-timeline { display: flex; gap: 0; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.sprint-block { flex: 1; padding: 16px 18px; border-right: 1px solid var(--border); position: relative; }
+.sprint-block:last-child { border-right: none; }
+.sprint-block.active-phase { background: #6c63ff08; }
+.sprint-num { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
+.sprint-name { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.sprint-goal { font-size: 0.75rem; color: var(--muted); line-height: 1.4; margin-bottom: 10px; }
+.sprint-deliverables { display: flex; flex-direction: column; gap: 4px; }
+.sprint-del { font-size: 0.72rem; color: #444; padding-left: 11px; position: relative; }
+.sprint-del::before { content: "·"; position: absolute; left: 2px; color: #aaa; }
+.sprint-status { display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 8px; margin-top: 10px; letter-spacing: 0.04em; }
+.status-done     { background: #dcfce7; color: #166534; }
+.status-active   { background: #6c63ff18; color: #6c63ff; }
+.status-pending  { background: #f1f5f9; color: #64748b; }
+
+/* team table */
+.team-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.team-table th { background: #f7f8fc; padding: 9px 14px; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #aaa; border-bottom: 2px solid var(--border); }
+.team-table td { padding: 10px 14px; border-bottom: 1px solid #f4f4f8; vertical-align: top; }
+.team-table tr:last-child td { border-bottom: none; }
+.member-name { font-weight: 700; color: var(--text); }
+.member-you  { font-size: 0.65rem; font-weight: 700; background: #6c63ff; color: white; padding: 1px 6px; border-radius: 8px; margin-left: 6px; vertical-align: middle; }
+.role-primary { font-weight: 600; color: var(--text); font-size: 0.8rem; }
+.role-secondary { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+.pres-topic { display: inline-block; background: #eff6ff; color: #1e40af; font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 8px; margin: 2px 2px 2px 0; }
+.report-topic { display: inline-block; background: #f0fdf4; color: #166534; font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 8px; margin: 2px 2px 2px 0; }
+
+/* product backlog overview table */
+.backlog-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; table-layout: fixed; }
+.backlog-table th { background: #f7f8fc; padding: 9px 14px; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #aaa; border-bottom: 2px solid var(--border); }
+.backlog-table td { padding: 9px 14px; border-bottom: 1px solid #f4f4f8; vertical-align: top; }
+.backlog-table tr:last-child td { border-bottom: none; }
+.backlog-table .sprint-col { font-weight: 700; color: var(--text); white-space: nowrap; }
+.backlog-owner { display: inline-block; font-size: 0.68rem; font-weight: 700; background: #6c63ff12; color: #6c63ff; padding: 1px 7px; border-radius: 6px; margin: 1px 2px 1px 0; }
+.backlog-task { font-size: 0.75rem; color: #444; margin: 1px 0; }
+
+.tech-info-tag { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+.tech-info-tag:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.tech-info-tag.active { outline: 2px solid #6c63ff; outline-offset: 1px; }
+.tech-drawer-section { display: flex; flex-direction: column; gap: 6px; }
+.tech-drawer-section-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6c63ff; }
+.tech-drawer-section-body { font-size: 0.82rem; line-height: 1.6; color: #374151; }
+.tech-drawer-install { background: #1e1e2e; color: #a5b4fc; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 0.78rem; padding: 10px 14px; border-radius: 6px; white-space: pre-wrap; line-height: 1.6; }
+.tech-drawer-install .cmd-comment { color: #6b7280; }
+
+/* process model note */
+.process-note { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 20px 24px; }
+.process-note-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: #aaa; margin-bottom: 10px; }
+.process-note p { font-size: 0.82rem; color: #444; line-height: 1.6; margin-bottom: 8px; }
+.process-note p:last-child { margin-bottom: 0; }
+.process-note strong { color: var(--text); }
+
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Platform Decision — SEP WS 2026/27</h1>
+  <span>Citizen Reporting App &nbsp;·&nbsp; Compare platform options for your team</span>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" data-view="overview">🏠 Overview</div>
+  <div class="tab" data-view="hybrid">🏛 Architecture</div>
+  <div class="tab" data-view="requirements">✅ Requirements Coverage</div>
+  <div class="tab" data-view="project">📋 Project</div>
+</div>
+
+<div class="main">
+
+  <!-- ════════════════════════════════════════════════════════
+       OVERVIEW VIEW — landing page
+  ════════════════════════════════════════════════════════ -->
+  <div class="view active" id="view-overview">
+    <div class="detail-page">
+
+      <div class="detail-hero">
+        <div class="detail-hero-icon">🏙</div>
+        <div>
+          <div class="detail-hero-title">Citizen Reporting App — Project Hub</div>
+          <div class="detail-hero-sub">SEP WS 2026/27 · HWG Ludwigshafen · a hybrid app for reporting municipal defects, pollution &amp; parking violations</div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-card-header">What this document is</div>
+        <div class="detail-card-body" style="padding:20px 24px;font-size:0.9rem;line-height:1.6;color:var(--text);">
+          This is the living design &amp; requirements document for our team project. We have decided on a <strong>Hybrid architecture</strong> — a native Android app for citizens, a web dashboard for staff, and a single shared Spring Boot backend. The pages below capture the architecture, the requirements, and how we run the project. Live task tracking is on our team board (GitHub Projects).
+        </div>
+      </div>
+
+      <div class="cards-grid three-col" style="margin-top:4px;">
+        <div class="detail-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-view=&quot;hybrid&quot;]').click()">
+          <div class="detail-card-body" style="padding:22px 24px;">
+            <div style="font-size:1.6rem;margin-bottom:8px;">🏛</div>
+            <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px;color:var(--hybrid);">Architecture</div>
+            <div style="font-size:0.84rem;color:var(--muted);line-height:1.5;">The chosen Hybrid system: 3-component diagram, backend class layers, SOLID review, API contract, data model — and the alternatives we rejected.</div>
+          </div>
+        </div>
+        <div class="detail-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-view=&quot;requirements&quot;]').click()">
+          <div class="detail-card-body" style="padding:22px 24px;">
+            <div style="font-size:1.6rem;margin-bottom:8px;">📋</div>
+            <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px;color:var(--web);">Requirements Coverage</div>
+            <div style="font-size:0.84rem;color:var(--muted);line-height:1.5;">Every functional &amp; technical requirement, typed and prioritised, with how each platform option covers it — the evidence behind our decision.</div>
+          </div>
+        </div>
+        <div class="detail-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-view=&quot;project&quot;]').click()">
+          <div class="detail-card-body" style="padding:22px 24px;">
+            <div style="font-size:1.6rem;margin-bottom:8px;">👥</div>
+            <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px;color:#d97706;">Project</div>
+            <div style="font-size:0.84rem;color:var(--muted);line-height:1.5;">Team roles &amp; responsibilities, our Kanban process, and a link to the live task board.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       REQUIREMENTS VIEW
+  ════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-requirements">
+    <div class="req-filter-bar">
+      <div class="req-filter-group">
+        <span class="req-filter-label">Type</span>
+        <div class="chip" data-rf="type" data-rv="functional">Functional</div>
+        <div class="chip" data-rf="type" data-rv="technical">Technical</div>
+      </div>
+      <div class="req-filter-sep"></div>
+      <div class="req-filter-group">
+        <span class="req-filter-label">Role</span>
+        <div class="chip" data-rf="role" data-rv="citizen">Citizen</div>
+        <div class="chip" data-rf="role" data-rv="staff">Staff</div>
+        <div class="chip" data-rf="role" data-rv="both">Both</div>
+      </div>
+      <div class="req-filter-sep"></div>
+      <div class="req-filter-group">
+        <span class="req-filter-label">Source</span>
+        <div class="chip" data-rf="source" data-rv="assigned">From assignment</div>
+        <div class="chip" data-rf="source" data-rv="implied">Implied</div>
+        <div class="chip" data-rf="source" data-rv="team">Team idea</div>
+      </div>
+      <div class="req-filter-sep"></div>
+      <div class="req-filter-group">
+        <span class="req-filter-label">Priority</span>
+        <div class="chip" data-rf="priority" data-rv="core">Core</div>
+        <div class="chip" data-rf="priority" data-rv="optional">Optional</div>
+      </div>
+    </div>
+
+    <div id="req-empty" class="req-empty" style="display:none">No requirements match the current filters.</div>
+
+    <div id="req-table-wrap" style="background:white;border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-top:0;">
+      <table class="req-table" id="reqTable">
+        <thead>
+          <tr>
+            <th style="width:220px">Requirement</th>
+            <th style="width:100px">Source</th>
+            <th style="width:90px">Type</th>
+            <th style="width:80px">Role</th>
+            <th style="width:80px">Priority</th>
+            <th class="center" style="width:140px;color:var(--web)">🌐 Web</th>
+            <th class="center" style="width:140px;color:var(--desktop)">🖥 Desktop</th>
+            <th class="center" style="width:140px;color:var(--mobile)">📱 Mobile</th>
+            <th class="center" style="width:140px;color:var(--hybrid)">🔀 Hybrid</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-type="functional" data-role="citizen" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Report submission form</div><div class="req-desc">Submit with type, description, photo, and location</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ HTML form</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ JavaFX form</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Native UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Native UI</span></td>
+          </tr>
+          <tr data-type="functional" data-role="citizen" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Map-based location selection</div><div class="req-desc">Citizen taps/clicks a point on the map to set location</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Leaflet click</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ WebView hack</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ OSMDroid</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ OSMDroid</span></td>
+          </tr>
+          <tr data-type="functional" data-role="citizen" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Photo attachment</div><div class="req-desc">Optionally attach a photo to the report</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ File input</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ File chooser</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Camera intent</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Camera intent</span></td>
+          </tr>
+          <tr data-type="functional" data-role="citizen" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Report category selection</div><div class="req-desc">Choose between defect, pollution, or parking violation</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Dropdown/radio</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ ComboBox</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Spinner/Radio</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ All</span></td>
+          </tr>
+          <tr data-type="functional" data-role="citizen" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Textual description</div><div class="req-desc">Free-text field to describe the issue</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Textarea</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ TextArea</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ EditText</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ All</span></td>
+          </tr>
+          <tr data-type="functional" data-role="staff" data-source="assigned" data-priority="core">
+            <td><div class="req-name">View all submitted reports</div><div class="req-desc">List or table of all citizen reports</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-staff">Staff</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Table/list view</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ TableView</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Needs extra UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Web dashboard</span></td>
+          </tr>
+          <tr data-type="functional" data-role="staff" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Edit report details</div><div class="req-desc">Staff can update or annotate a report</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-staff">Staff</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Form in browser</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Edit dialog</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Needs extra UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Web form</span></td>
+          </tr>
+          <tr data-type="functional" data-role="staff" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Delete resolved reports</div><div class="req-desc">Remove a report after it has been handled</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-staff">Staff</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ DELETE endpoint</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Button + SQL</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Needs extra UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Web action</span></td>
+          </tr>
+          <tr data-type="technical" data-role="both" data-source="assigned" data-priority="core">
+            <td><div class="req-name">Java and/or JavaScript</div><div class="req-desc">Mandatory language constraint from assignment</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-tech">Technical</span></td>
+            <td><span class="role-badge role-both">Both</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Both</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Java only</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Java (Android)</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Both</span></td>
+          </tr>
+          <tr data-type="technical" data-role="both" data-source="assigned" data-priority="core">
+            <td><div class="req-name">OpenStreetMap / Leaflet</div><div class="req-desc">Suggested tools for map data and rendering</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-tech">Technical</span></td>
+            <td><span class="role-badge role-both">Both</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Leaflet native</span></td>
+            <td class="req-cell"><span class="fit fit-ok">△ Via WebView</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ OSMDroid</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Both</span></td>
+          </tr>
+          <tr data-type="technical" data-role="both" data-source="implied" data-priority="core">
+            <td><div class="req-name">Shared data between roles</div><div class="req-desc">Citizen submissions must be visible to staff — requires a central data store</div></td>
+            <td><span class="src-badge src-implied">implied</span></td>
+            <td><span class="type-badge type-tech">Technical</span></td>
+            <td><span class="role-badge role-both">Both</span></td>
+            <td><span class="pri-badge pri-core">Core</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Central DB</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Standalone breaks this</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Central DB</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Central DB</span></td>
+          </tr>
+          <tr data-type="functional" data-role="citizen" data-source="assigned" data-priority="optional">
+            <td><div class="req-name">Parking violation reports</div><div class="req-desc">Third report category, explicitly marked optional in the assignment</div></td>
+            <td><span class="src-badge src-assigned">from assignment</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-opt">Optional</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Extra enum value</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Extra enum value</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Extra category</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ All</span></td>
+          </tr>
+          <tr data-type="technical" data-role="staff" data-source="team" data-priority="optional">
+            <td><div class="req-name">Staff authentication / login</div><div class="req-desc">Protect the staff view behind a login — not in the assignment but needed for any real deployment</div></td>
+            <td><span class="src-badge src-ext">team idea</span></td>
+            <td><span class="type-badge type-tech">Technical</span></td>
+            <td><span class="role-badge role-staff">Staff</span></td>
+            <td><span class="pri-badge pri-opt">Optional</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Session / JWT</span></td>
+            <td class="req-cell"><span class="fit fit-ok">△ Local login dialog</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Needs extra UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Web login</span></td>
+          </tr>
+          <tr data-type="functional" data-role="citizen" data-source="team" data-priority="optional">
+            <td><div class="req-name">GPS auto-fill location</div><div class="req-desc">Pre-fill the map location from device GPS</div></td>
+            <td><span class="src-badge src-ext">team idea</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-citizen">Citizen</span></td>
+            <td><span class="pri-badge pri-opt">Optional</span></td>
+            <td class="req-cell"><span class="fit fit-ok">△ Browser Geolocation API</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Not available</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ FusedLocation</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ FusedLocation</span></td>
+          </tr>
+          <tr data-type="functional" data-role="staff" data-source="team" data-priority="optional">
+            <td><div class="req-name">Map overview for staff</div><div class="req-desc">Staff see all open reports as pins on a map</div></td>
+            <td><span class="src-badge src-ext">team idea</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-staff">Staff</span></td>
+            <td><span class="pri-badge pri-opt">Optional</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Leaflet markers</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ WebView hack</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Needs extra UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Leaflet (web)</span></td>
+          </tr>
+          <tr data-type="functional" data-role="staff" data-source="team" data-priority="optional">
+            <td><div class="req-name">Report status tracking</div><div class="req-desc">Status field (open → in progress → resolved)</div></td>
+            <td><span class="src-badge src-ext">team idea</span></td>
+            <td><span class="type-badge type-func">Functional</span></td>
+            <td><span class="role-badge role-staff">Staff</span></td>
+            <td><span class="pri-badge pri-opt">Optional</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Dropdown + DB column</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ ComboBox + DB</span></td>
+            <td class="req-cell"><span class="fit fit-poor">✗ Needs extra UI</span></td>
+            <td class="req-cell"><span class="fit fit-great">✓ Both UIs</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div><!-- /view-requirements -->
+
+
+  <!-- ════════════════════════════════════════════════════════
+       ARCHITECTURE VIEW (chosen: Hybrid)
+  ════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-hybrid">
+    <div class="detail-page">
+
+      <div class="detail-hero">
+        <div class="detail-hero-icon">🏛</div>
+        <div>
+          <div class="detail-hero-title">Architecture — Web + Mobile Hybrid</div>
+          <div class="detail-hero-sub">Our chosen design · Android app for citizens · Web dashboard for staff · single shared Spring Boot backend</div>
+        </div>
+        <div class="detail-hero-badge badge-combo">Chosen Solution</div>
+      </div>
+
+      <!-- Technologies -->
+      <div class="detail-card">
+        <div class="detail-card-header">Technologies &amp; Frameworks <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· click any tag to learn more</span></div>
+        <div class="detail-card-body">
+          <table class="tech-table">
+            <tr>
+              <td>Languages</td>
+              <td><div class="tech-tags">
+                <span class="tag t-lang tech-info-tag" data-tech="java">Java (Android + Backend)</span>
+                <span class="tag t-lang tech-info-tag" data-tech="javascript">JavaScript (Web)</span>
+              </div></td>
+            </tr>
+            <tr>
+              <td>Android</td>
+              <td><div class="tech-tags">
+                <span class="tag t-fw tech-info-tag" data-tech="android-sdk">Android SDK</span>
+                <span class="tag t-map tech-info-tag" data-tech="osmdroid">OSMDroid</span>
+                <span class="tag t-fw tech-info-tag" data-tech="fusedlocation">FusedLocation</span>
+                <span class="tag t-fw tech-info-tag" data-tech="camera-intent">Camera Intent</span>
+                <span class="tag t-fw tech-info-tag" data-tech="retrofit">Retrofit 2</span>
+              </div></td>
+            </tr>
+            <tr>
+              <td>Web</td>
+              <td><div class="tech-tags">
+                <span class="tag t-fw tech-info-tag" data-tech="vanilla-js">Vanilla JS</span>
+                <span class="tag t-map tech-info-tag" data-tech="leaflet">Leaflet.js</span>
+                <span class="tag t-map tech-info-tag" data-tech="osm">OpenStreetMap</span>
+              </div></td>
+            </tr>
+            <tr>
+              <td>Backend</td>
+              <td><div class="tech-tags">
+                <span class="tag t-fw tech-info-tag" data-tech="spring-boot">Spring Boot 3</span>
+                <span class="tag t-fw tech-info-tag" data-tech="spring-security">Spring Security</span>
+                <span class="tag t-fw tech-info-tag" data-tech="spring-jpa">Spring Data JPA</span>
+                <span class="tag t-db tech-info-tag" data-tech="postgresql">PostgreSQL</span>
+                <span class="tag t-fw tech-info-tag" data-tech="openapi">OpenAPI / Swagger</span>
+              </div></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tech info drawer -->
+      <div id="tech-drawer-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1000;" onclick="closeTechDrawer()"></div>
+      <div id="tech-drawer" style="display:none;position:fixed;top:0;right:0;width:420px;max-width:95vw;height:100vh;background:white;box-shadow:-4px 0 32px rgba(0,0,0,0.15);z-index:1001;overflow-y:auto;padding:0;flex-direction:column;">
+        <div id="tech-drawer-header" style="padding:20px 24px 16px;border-bottom:1px solid #f0f0f6;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:white;z-index:1;">
+          <div>
+            <div id="tech-drawer-title" style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:3px;"></div>
+            <div id="tech-drawer-category" style="font-size:0.75rem;color:var(--muted);font-weight:500;"></div>
+          </div>
+          <button onclick="closeTechDrawer()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:#aaa;padding:2px 6px;line-height:1;flex-shrink:0;">✕</button>
+        </div>
+        <div id="tech-drawer-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;"></div>
+      </div>
+
+      <!-- Architecture Diagram -->
+      <div class="detail-card">
+        <div class="detail-card-header">System Architecture</div>
+        <div class="detail-card-body" style="padding:28px 32px;">
+          <!--
+            Header band = 46px tall.  Title baseline = y+30, stereotype = y+43.
+            Content divider line = y+46.  Rows start at y+46, each 16px line-height.
+            Footer divider at y+46+(n*16), footer text 14px below that.
+          -->
+          <svg viewBox="0 0 780 450" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;display:block;margin:0 auto;" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">
+            <defs>
+              <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
+              </marker>
+              <marker id="ah2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#6c63ff"/>
+              </marker>
+            </defs>
+
+            <!-- ══ Android  x=20 y=50 w=185 ══
+                 header:   y=50..96  (46px)
+                 divider:  y=96
+                 rows×5:   y=96..176  (5×16=80px)  → baselines 110,126,142,158,174
+                 footer div y=178
+                 footer text y=193
+                 box bottom  y=50+200=250            -->
+            <rect x="20"  y="50"  width="185" height="200" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+            <rect x="20"  y="50"  width="185" height="46"  rx="6" fill="#16a34a"/>
+            <rect x="20"  y="78"  width="185" height="18"  fill="#16a34a"/>
+            <text x="112" y="77"  text-anchor="middle" fill="white"  font-weight="bold" font-size="15">Android App</text>
+            <text x="112" y="92"  text-anchor="middle" fill="#bbf7d0" font-size="10">«client» Citizens</text>
+            <line x1="20" y1="96" x2="205" y2="96" stroke="#dcfce7" stroke-width="1"/>
+            <text x="32" y="112" fill="#166534" font-size="10">+ ReportFragment</text>
+            <text x="32" y="128" fill="#166534" font-size="10">+ OSMDroid MapView</text>
+            <text x="32" y="144" fill="#166534" font-size="10">+ FusedLocationClient</text>
+            <text x="32" y="160" fill="#166534" font-size="10">+ CameraIntent</text>
+            <text x="32" y="176" fill="#166534" font-size="10">+ RetrofitClient</text>
+            <line x1="20" y1="182" x2="205" y2="182" stroke="#dcfce7" stroke-width="1"/>
+            <text x="32" y="196" fill="#16a34a" font-size="9" font-style="italic">Java · Android SDK</text>
+
+            <!-- ══ Web  x=575 y=50 w=185 ══ (same heights as Android) -->
+            <rect x="575" y="50"  width="185" height="200" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+            <rect x="575" y="50"  width="185" height="46"  rx="6" fill="#2563eb"/>
+            <rect x="575" y="78"  width="185" height="18"  fill="#2563eb"/>
+            <text x="667" y="77"  text-anchor="middle" fill="white"  font-weight="bold" font-size="15">Web Dashboard</text>
+            <text x="667" y="92"  text-anchor="middle" fill="#bfdbfe" font-size="10">«client» Staff</text>
+            <line x1="575" y1="96" x2="760" y2="96" stroke="#dbeafe" stroke-width="1"/>
+            <text x="587" y="112" fill="#1e40af" font-size="10">+ ReportTableView</text>
+            <text x="587" y="128" fill="#1e40af" font-size="10">+ LeafletMapView</text>
+            <text x="587" y="144" fill="#1e40af" font-size="10">+ EditReportModal</text>
+            <text x="587" y="160" fill="#1e40af" font-size="10">+ LoginForm</text>
+            <text x="587" y="176" fill="#1e40af" font-size="10">+ ApiService (fetch)</text>
+            <line x1="575" y1="182" x2="760" y2="182" stroke="#dbeafe" stroke-width="1"/>
+            <text x="587" y="196" fill="#2563eb" font-size="9" font-style="italic">JavaScript · Leaflet.js</text>
+
+            <!-- ══ Spring Boot  x=278 y=20 w=224 ══
+                 header:   y=20..66  (46px)
+                 divider:  y=66
+                 rows×6:   baselines 82,98,114,130,146,162
+                 svc div:  y=168
+                 svc×2:    baselines 182,196
+                 tech div: y=202
+                 tech×2:   baselines 216,230
+                 box bottom y=20+246=266               -->
+            <rect x="278" y="20"  width="224" height="246" rx="6" fill="#faf5ff" stroke="#6c63ff" stroke-width="2"/>
+            <rect x="278" y="20"  width="224" height="46"  rx="6" fill="#6c63ff"/>
+            <rect x="278" y="48"  width="224" height="18"  fill="#6c63ff"/>
+            <text x="390" y="47"  text-anchor="middle" fill="white"  font-weight="bold" font-size="15">Spring Boot 3</text>
+            <text x="390" y="62"  text-anchor="middle" fill="#e9d5ff" font-size="10">«REST API» Backend</text>
+            <line x1="278" y1="66" x2="502" y2="66" stroke="#ede9fe" stroke-width="1"/>
+            <text x="290" y="82"  fill="#5b21b6" font-size="10">POST   /api/reports</text>
+            <text x="290" y="98"  fill="#5b21b6" font-size="10">GET    /api/reports</text>
+            <text x="290" y="114" fill="#5b21b6" font-size="10">PUT    /api/reports/{id}</text>
+            <text x="290" y="130" fill="#5b21b6" font-size="10">DELETE /api/reports/{id}</text>
+            <text x="290" y="146" fill="#5b21b6" font-size="10">POST   /api/auth/login</text>
+            <text x="290" y="162" fill="#5b21b6" font-size="10">GET    /api/photos/{id}</text>
+            <line x1="278" y1="168" x2="502" y2="168" stroke="#ede9fe" stroke-width="1"/>
+            <text x="290" y="182" fill="#7c3aed" font-size="9" font-style="italic">ReportService</text>
+            <text x="290" y="196" fill="#7c3aed" font-size="9" font-style="italic">AuthService · PhotoService</text>
+            <line x1="278" y1="202" x2="502" y2="202" stroke="#ede9fe" stroke-width="1"/>
+            <text x="290" y="216" fill="#6c63ff" font-size="9" font-style="italic">Spring Security · Spring Data JPA</text>
+            <text x="290" y="230" fill="#6c63ff" font-size="9" font-style="italic">Java · Spring Boot</text>
+
+            <!-- ══ PostgreSQL  x=305 y=345 w=170 ══
+                 header: 46px  title baseline=375  stereotype=390
+                 divider y=391
+                 rows×2  baselines 405,419
+                 box bottom 345+90=435              -->
+            <rect x="305" y="345" width="170" height="90"  rx="6" fill="#fff7ed" stroke="#d97706" stroke-width="1.5"/>
+            <rect x="305" y="345" width="170" height="46"  rx="6" fill="#d97706"/>
+            <rect x="305" y="373" width="170" height="18"  fill="#d97706"/>
+            <text x="390" y="372" text-anchor="middle" fill="white"  font-weight="bold" font-size="15">PostgreSQL</text>
+            <text x="390" y="387" text-anchor="middle" fill="#fef3c7" font-size="10">«database»</text>
+            <line x1="305" y1="391" x2="475" y2="391" stroke="#fde68a" stroke-width="1"/>
+            <text x="317" y="406" fill="#92400e" font-size="10">report · user · photo</text>
+            <text x="317" y="422" fill="#92400e" font-size="10">/uploads/ (photo files)</text>
+
+            <!-- Android → Spring Boot (mid-header level ~y=73) -->
+            <line x1="205" y1="130" x2="278" y2="120" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="210" y="118" fill="#64748b" font-size="9">POST /api</text>
+
+            <!-- Spring Boot ↔ Web -->
+            <line x1="502" y1="112" x2="575" y2="126" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+            <line x1="575" y1="142" x2="502" y2="128" stroke="#64748b" stroke-width="1.5" marker-end="url(#ah)"/>
+            <text x="508" y="108" fill="#64748b" font-size="9">JSON/REST</text>
+
+            <!-- Spring Boot → PostgreSQL -->
+            <line x1="390" y1="266" x2="390" y2="345" stroke="#6c63ff" stroke-width="1.5" marker-end="url(#ah2)"/>
+            <text x="396" y="310" fill="#6c63ff" font-size="9">JPA/Hibernate</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- SOLID Principles Review -->
+      <div class="detail-card">
+        <div class="detail-card-header">SOLID Principles &mdash; Architecture Review <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· how our Spring Boot layered backend applies each principle</span></div>
+        <div class="detail-card-body" style="padding:24px 28px;">
+
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 20px;line-height:1.5;">
+            SOLID is a set of five object-oriented design principles that keep code maintainable and extensible. Our backend follows the classic layered structure
+            <strong>Controller &rarr; Service &rarr; Repository &rarr; JPA Entity</strong>, which naturally supports all five. Each principle below lists how we comply and what a violation would look like.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+
+            <!-- S -->
+            <div style="border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+                <span style="font-weight:800;font-size:1.1rem;color:var(--hybrid);">S</span>
+                <span style="font-weight:700;">Single Responsibility Principle</span>
+                <span style="font-size:0.75rem;color:var(--muted);">A class should have one reason to change.</span>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.55;">
+                <div style="margin-bottom:4px;"><strong style="color:#2e9e5b;">✓ We comply:</strong> <code>ReportController</code> only handles HTTP, <code>ReportService</code> holds business logic, <code>ReportRepository</code> only does persistence. Photo handling lives in its own <code>PhotoService</code>.</div>
+                <div><strong style="color:#c0392b;">✗ Violation:</strong> a single <code>ReportManager</code> class that parses the HTTP request, validates, writes to the DB, and resizes the uploaded photo &mdash; four reasons to change in one place.</div>
+              </div>
+            </div>
+
+            <!-- O -->
+            <div style="border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+                <span style="font-weight:800;font-size:1.1rem;color:var(--hybrid);">O</span>
+                <span style="font-weight:700;">Open/Closed Principle</span>
+                <span style="font-size:0.75rem;color:var(--muted);">Open for extension, closed for modification.</span>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.55;">
+                <div style="margin-bottom:4px;"><strong style="color:#2e9e5b;">✓ We comply:</strong> report categories (pothole, pollution, parking) are an <code>enum</code> / lookup, so adding a new category needs no change to the service or controller logic. New validation rules can be added as separate <code>Validator</code> beans.</div>
+                <div><strong style="color:#c0392b;">✗ Violation:</strong> a big <code>if (type.equals("pothole")) … else if … </code> chain in the service that must be edited every time a new report type is introduced.</div>
+              </div>
+            </div>
+
+            <!-- L -->
+            <div style="border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+                <span style="font-weight:800;font-size:1.1rem;color:var(--hybrid);">L</span>
+                <span style="font-weight:700;">Liskov Substitution Principle</span>
+                <span style="font-size:0.75rem;color:var(--muted);">Subtypes must be usable in place of their base type.</span>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.55;">
+                <div style="margin-bottom:4px;"><strong style="color:#2e9e5b;">✓ We comply:</strong> any <code>JpaRepository&lt;Report, Long&gt;</code> implementation Spring injects behaves identically to the interface contract &mdash; the service never needs to know which concrete implementation it got.</div>
+                <div><strong style="color:#c0392b;">✗ Violation:</strong> a <code>ReadOnlyReportRepository</code> that extends the repository interface but throws on <code>save()</code> &mdash; callers expecting a working <code>save()</code> would break.</div>
+              </div>
+            </div>
+
+            <!-- I -->
+            <div style="border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+                <span style="font-weight:800;font-size:1.1rem;color:var(--hybrid);">I</span>
+                <span style="font-weight:700;">Interface Segregation Principle</span>
+                <span style="font-size:0.75rem;color:var(--muted);">Don't force clients to depend on methods they don't use.</span>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.55;">
+                <div style="margin-bottom:4px;"><strong style="color:#2e9e5b;">✓ We comply:</strong> separate focused interfaces &mdash; <code>ReportRepository</code>, <code>PhotoRepository</code>, <code>UserRepository</code> &mdash; so the Android citizen endpoints never see staff-only operations.</div>
+                <div><strong style="color:#c0392b;">✗ Violation:</strong> one fat <code>DataService</code> interface with <code>saveReport()</code>, <code>deleteUser()</code>, <code>resizePhoto()</code>, <code>exportCsv()</code> that every consumer must implement or depend on.</div>
+              </div>
+            </div>
+
+            <!-- D -->
+            <div style="border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;">
+                <span style="font-weight:800;font-size:1.1rem;color:var(--hybrid);">D</span>
+                <span style="font-weight:700;">Dependency Inversion Principle</span>
+                <span style="font-size:0.75rem;color:var(--muted);">Depend on abstractions, not concretions.</span>
+              </div>
+              <div style="font-size:0.85rem;line-height:1.55;">
+                <div style="margin-bottom:4px;"><strong style="color:#2e9e5b;">✓ We comply:</strong> <code>ReportService</code> depends on the <code>ReportRepository</code> <em>interface</em>, injected by Spring's IoC container &mdash; not on a hand-built PostgreSQL class. Swapping the DB or mocking it in tests needs no service change.</div>
+                <div><strong style="color:#c0392b;">✗ Violation:</strong> <code>ReportService</code> doing <code>new PostgresConnection()</code> directly in its constructor, hard-wiring the high-level logic to a low-level detail.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Backend Layer Diagram -->
+      <div class="detail-card">
+        <div class="detail-card-header">Backend Class Layers <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· the classes referenced in the SOLID review, by layer</span></div>
+        <div class="detail-card-body" style="padding:24px 28px;">
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 18px;line-height:1.5;">
+            Each layer depends only on the layer below it, through interfaces (Dependency Inversion). Photo has no own controller &mdash; photos only exist attached to a report, so they are served via <code>/reports/{id}/photo</code> sub-routes (YAGNI: a standalone <code>PhotoController</code> would expose routes nobody calls).
+          </p>
+          <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:760px;display:block;margin:0 auto;" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12">
+            <defs>
+              <marker id="bl-arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                <path d="M0,1 L8,3.5 L0,6" fill="none" stroke="#64748b" stroke-width="1.4"/>
+              </marker>
+            </defs>
+
+            <!-- Layer labels (left gutter) -->
+            <text x="8" y="48"  fill="var(--muted)" font-size="11" font-weight="700">CONTROLLER</text>
+            <text x="8" y="128" fill="var(--muted)" font-size="11" font-weight="700">SERVICE</text>
+            <text x="8" y="208" fill="var(--muted)" font-size="11" font-weight="700">REPOSITORY</text>
+            <text x="8" y="288" fill="var(--muted)" font-size="11" font-weight="700">ENTITY (JPA)</text>
+
+            <!-- Layer band separators -->
+            <line x1="110" y1="80"  x2="750" y2="80"  stroke="var(--border)" stroke-dasharray="3 3"/>
+            <line x1="110" y1="160" x2="750" y2="160" stroke="var(--border)" stroke-dasharray="3 3"/>
+            <line x1="110" y1="240" x2="750" y2="240" stroke="var(--border)" stroke-dasharray="3 3"/>
+
+            <!-- Column headers -->
+            <text x="230" y="20" fill="var(--text)" font-size="11.5" font-weight="700" text-anchor="middle">Report</text>
+            <text x="430" y="20" fill="var(--text)" font-size="11.5" font-weight="700" text-anchor="middle">Photo</text>
+            <text x="630" y="20" fill="var(--text)" font-size="11.5" font-weight="700" text-anchor="middle">User / Auth</text>
+
+            <!-- ROW 1: Controllers -->
+            <rect x="150" y="30" width="160" height="38" rx="8" fill="#c35bd112" stroke="var(--hybrid)" stroke-width="1.3"/>
+            <text x="230" y="54" text-anchor="middle" fill="var(--text)" font-weight="600">ReportController</text>
+
+            <!-- Photo: no controller, placeholder note -->
+            <text x="430" y="50" text-anchor="middle" fill="var(--muted)" font-size="10.5" font-style="italic">(via /reports/{id}/photo)</text>
+
+            <rect x="550" y="30" width="160" height="38" rx="8" fill="#c35bd112" stroke="var(--hybrid)" stroke-width="1.3"/>
+            <text x="630" y="54" text-anchor="middle" fill="var(--text)" font-weight="600">AuthController</text>
+
+            <!-- ROW 2: Services -->
+            <rect x="150" y="110" width="160" height="38" rx="8" fill="#667eea12" stroke="var(--web)" stroke-width="1.3"/>
+            <text x="230" y="134" text-anchor="middle" fill="var(--text)" font-weight="600">ReportService</text>
+
+            <rect x="350" y="110" width="160" height="38" rx="8" fill="#667eea12" stroke="var(--web)" stroke-width="1.3"/>
+            <text x="430" y="134" text-anchor="middle" fill="var(--text)" font-weight="600">PhotoService</text>
+
+            <rect x="550" y="110" width="160" height="38" rx="8" fill="#667eea12" stroke="var(--web)" stroke-width="1.3"/>
+            <text x="630" y="134" text-anchor="middle" fill="var(--text)" font-weight="600">AuthService</text>
+
+            <!-- ROW 3: Repositories -->
+            <rect x="150" y="190" width="160" height="38" rx="8" fill="#11998e12" stroke="var(--mobile)" stroke-width="1.3"/>
+            <text x="230" y="214" text-anchor="middle" fill="var(--text)" font-weight="600">ReportRepository</text>
+
+            <rect x="350" y="190" width="160" height="38" rx="8" fill="#11998e12" stroke="var(--mobile)" stroke-width="1.3"/>
+            <text x="430" y="214" text-anchor="middle" fill="var(--text)" font-weight="600">PhotoRepository</text>
+
+            <rect x="550" y="190" width="160" height="38" rx="8" fill="#11998e12" stroke="var(--mobile)" stroke-width="1.3"/>
+            <text x="630" y="214" text-anchor="middle" fill="var(--text)" font-weight="600">UserRepository</text>
+
+            <!-- ROW 4: Entities -->
+            <rect x="150" y="270" width="160" height="38" rx="8" fill="#f7f8fc" stroke="var(--border)" stroke-width="1.3"/>
+            <text x="230" y="294" text-anchor="middle" fill="var(--text)" font-weight="600">Report</text>
+
+            <rect x="350" y="270" width="160" height="38" rx="8" fill="#f7f8fc" stroke="var(--border)" stroke-width="1.3"/>
+            <text x="430" y="294" text-anchor="middle" fill="var(--text)" font-weight="600">Photo</text>
+
+            <rect x="550" y="270" width="160" height="38" rx="8" fill="#f7f8fc" stroke="var(--border)" stroke-width="1.3"/>
+            <text x="630" y="294" text-anchor="middle" fill="var(--text)" font-weight="600">User</text>
+
+            <!-- Dependency arrows (downward) -->
+            <!-- Report column: Ctrl->Svc->Repo->Entity -->
+            <line x1="230" y1="68"  x2="230" y2="108" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+            <line x1="230" y1="148" x2="230" y2="188" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+            <line x1="230" y1="228" x2="230" y2="268" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+
+            <!-- Photo column: Svc->Repo->Entity -->
+            <line x1="430" y1="148" x2="430" y2="188" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+            <line x1="430" y1="228" x2="430" y2="268" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+
+            <!-- User column: Ctrl->Svc->Repo->Entity -->
+            <line x1="630" y1="68"  x2="630" y2="108" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+            <line x1="630" y1="148" x2="630" y2="188" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+            <line x1="630" y1="228" x2="630" y2="268" stroke="#64748b" stroke-width="1.3" marker-end="url(#bl-arr)"/>
+
+            <!-- ReportController -> PhotoService (photo sub-route delegation) -->
+            <path d="M310,49 C335,49 335,129 348,129" fill="none" stroke="#64748b" stroke-width="1.1" stroke-dasharray="4 3" marker-end="url(#bl-arr)"/>
+          </svg>
+          <p style="font-size:0.78rem;color:var(--muted);margin:14px 0 0;line-height:1.5;">
+            Solid arrows = layer dependency (each depends on the interface below). Dashed arrow = <code>ReportController</code> delegates photo uploads to <code>PhotoService</code>. This diagram will be formalised into the full UML class diagram in Sprint 2.
+          </p>
+        </div>
+      </div>
+
+      <!-- API Contract -->
+      <div class="detail-card">
+        <div class="detail-card-header">API Contract <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· the HTTP endpoints both frontends call &mdash; the agreed seam between backend and clients</span></div>
+        <div class="detail-card-body" style="padding:24px 28px;">
+
+          <style>
+            .api-conv { display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px; }
+            .api-conv > div { flex:1 1 220px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.78rem;line-height:1.45; }
+            .api-conv strong { display:block;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:#8a8fa3;margin-bottom:3px; }
+            .api-tbl { width:100%;border-collapse:collapse;font-size:0.78rem;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden; }
+            .api-tbl caption { caption-side:top;text-align:left;font-weight:700;font-size:0.88rem;padding:10px 12px;color:white; }
+            .api-tbl th { background:#f7f8fc;text-align:left;padding:7px 10px;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.05em;color:#8a8fa3;border-bottom:2px solid var(--border);white-space:nowrap; }
+            .api-tbl td { padding:7px 10px;border-bottom:1px solid #f0f0f4;vertical-align:top;line-height:1.4; }
+            .api-tbl tr:last-child td { border-bottom:none; }
+            .api-tbl code { font-size:0.75rem;background:#f4f4f8;padding:1px 5px;border-radius:4px; }
+            .m { font-weight:700;font-size:0.68rem;padding:2px 7px;border-radius:4px;color:white;white-space:nowrap; }
+            .m-get{background:#2e9e5b;} .m-post{background:#6c63ff;} .m-put{background:#d97706;} .m-del{background:#c0392b;}
+            .auth-pub{color:#2e9e5b;font-weight:600;font-size:0.72rem;} .auth-staff{color:#c0392b;font-weight:600;font-size:0.72rem;}
+          </style>
+
+          <!-- Conventions -->
+          <div class="api-conv">
+            <div><strong>Base path</strong> All endpoints are under <code>/api</code>. Example: <code>/api/reports</code>.</div>
+            <div><strong>Format</strong> JSON request &amp; response bodies (<code>Content-Type: application/json</code>), except photo upload which is <code>multipart/form-data</code>.</div>
+            <div><strong>Auth</strong> Staff endpoints require a <strong>JWT</strong> sent as <code>Authorization: Bearer &lt;token&gt;</code>. Public endpoints need no token. (JWT chosen over cookies so Android and web authenticate identically.)</div>
+            <div><strong>Errors</strong> Non-2xx responses return <code>{ "timestamp", "status", "error", "message" }</code>. Validation failures = <code>400</code>, missing token = <code>401</code>, wrong role = <code>403</code>, unknown id = <code>404</code>.</div>
+          </div>
+
+          <!-- Reports -->
+          <table class="api-tbl">
+            <caption style="background:#6c63ff;">Reports</caption>
+            <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Request body</th><th>Success</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="m m-post">POST</span></td><td><code>/api/reports</code></td>
+                <td><span class="auth-pub">public</span></td>
+                <td><code>{ title, description?, category, latitude, longitude }</code></td>
+                <td><code>201 Created</code> + the new report</td>
+                <td>Citizen submits a report. Server sets <code>id</code>, <code>status=OPEN</code>, <code>created_at</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="m m-get">GET</span></td><td><code>/api/reports</code></td>
+                <td><span class="auth-staff">staff</span></td>
+                <td>&mdash; (query: <code>?status=&amp;category=&amp;page=</code>)</td>
+                <td><code>200 OK</code> + paginated list</td>
+                <td>Staff dashboard loads reports, optionally filtered by status/category.</td>
+              </tr>
+              <tr>
+                <td><span class="m m-get">GET</span></td><td><code>/api/reports/{id}</code></td>
+                <td><span class="auth-staff">staff</span></td>
+                <td>&mdash;</td>
+                <td><code>200 OK</code> + one report</td>
+                <td>Fetch a single report's full detail. <code>404</code> if id unknown.</td>
+              </tr>
+              <tr>
+                <td><span class="m m-put">PUT</span></td><td><code>/api/reports/{id}</code></td>
+                <td><span class="auth-staff">staff</span></td>
+                <td><code>{ title?, description?, category?, status? }</code></td>
+                <td><code>200 OK</code> + updated report</td>
+                <td>Staff edits a report. Server sets <code>updated_at</code> and <code>updated_by</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="m m-del">DELETE</span></td><td><code>/api/reports/{id}</code></td>
+                <td><span class="auth-staff">staff</span></td>
+                <td>&mdash;</td>
+                <td><code>204 No Content</code></td>
+                <td>Staff deletes a report. Photos are cascade-deleted by the DB.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Photos -->
+          <table class="api-tbl">
+            <caption style="background:#16a34a;">Photos <span style="font-weight:400;font-size:0.74rem;opacity:0.9;">· sub-routes of a report (no standalone photo controller)</span></caption>
+            <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Request body</th><th>Success</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="m m-post">POST</span></td><td><code>/api/reports/{id}/photo</code></td>
+                <td><span class="auth-pub">public</span></td>
+                <td><code>multipart/form-data</code>: the image file</td>
+                <td><code>201 Created</code> + photo metadata</td>
+                <td>Attach a photo to a report. <code>PhotoService</code> saves the file, stores the path.</td>
+              </tr>
+              <tr>
+                <td><span class="m m-get">GET</span></td><td><code>/api/reports/{id}/photo</code></td>
+                <td><span class="auth-pub">public</span></td>
+                <td>&mdash;</td>
+                <td><code>200 OK</code> + image bytes</td>
+                <td>Download/display the report's photo. <code>404</code> if none attached.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Auth -->
+          <table class="api-tbl">
+            <caption style="background:#d97706;">Authentication</caption>
+            <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Request body</th><th>Success</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="m m-post">POST</span></td><td><code>/api/auth/login</code></td>
+                <td><span class="auth-pub">public</span></td>
+                <td><code>{ username, password }</code></td>
+                <td><code>200 OK</code> + <code>{ token, role }</code></td>
+                <td>Staff logs in. Returns a JWT the client sends on every later staff call.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p style="font-size:0.78rem;color:var(--muted);margin:16px 0 0;line-height:1.55;">
+            <strong>Public vs staff mirrors the two frontends:</strong> the Android app only ever calls the three <span class="auth-pub">public</span> endpoints (submit report, attach photo, view photo). Every <span class="auth-staff">staff</span> endpoint &mdash; list, edit, delete &mdash; is the web dashboard, gated behind login. This is the contract Yoana (Android) and Charlene (Web) build against while the backend is implemented in parallel.
+          </p>
+        </div>
+      </div>
+
+      <!-- Data Model -->
+      <div class="detail-card">
+        <div class="detail-card-header">Data Model</div>
+        <div class="detail-card-body" style="padding:28px 32px;">
+          <!--
+            Layout: 3 entity boxes side by side, each row = 22px, header = 30px.
+            Row y values computed strictly: header bottom = y+30, then rows at +22 each.
+            No inline italic notes inside boxes — moved to caption below.
+            Legend = plain text only, no colour swatches.
+          -->
+          <svg viewBox="0 0 780 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;display:block;margin:0 auto;" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11">
+            <defs>
+              <marker id="dm-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <path d="M0,1 L7,3 L0,5" fill="none" stroke="#64748b" stroke-width="1.3"/>
+              </marker>
+            </defs>
+
+            <!-- ════ user (x=20, y=40, w=210) ════
+                 header: y=40..70  (30px)
+                 row 1 PK id:       y=70..92
+                 row 2 username:    y=92..114
+                 row 3 email:       y=114..136
+                 row 4 password_h:  y=136..158
+                 row 5 role:        y=158..180
+                 row 6 created_at:  y=180..202
+                 total height = 162  -->
+            <rect x="20" y="40" width="210" height="162" rx="4" fill="white" stroke="#d97706" stroke-width="1.5"/>
+            <!-- header -->
+            <rect x="20" y="40" width="210" height="30" rx="4" fill="#d97706"/>
+            <rect x="20" y="56" width="210" height="14" fill="#d97706"/>
+            <text x="125" y="61" text-anchor="middle" fill="white" font-weight="bold" font-size="12">user</text>
+            <!-- PK row -->
+            <rect x="20" y="70" width="210" height="22" fill="#fffbeb"/>
+            <text x="32"  y="85" fill="#92400e" font-weight="bold" font-size="10">PK  id</text>
+            <text x="228" y="85" text-anchor="end" fill="#9ca3af" font-size="10">BIGSERIAL</text>
+            <line x1="20" y1="92" x2="230" y2="92" stroke="#e5e7eb" stroke-width="1"/>
+            <!-- fields -->
+            <text x="32"  y="107" fill="#1f2937" font-size="10">    username</text>    <text x="228" y="107" text-anchor="end" fill="#9ca3af" font-size="10">VARCHAR(80)</text>
+            <line x1="20" y1="114" x2="230" y2="114" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="32"  y="129" fill="#1f2937" font-size="10">    email</text>        <text x="228" y="129" text-anchor="end" fill="#9ca3af" font-size="10">VARCHAR(200)</text>
+            <line x1="20" y1="136" x2="230" y2="136" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="32"  y="151" fill="#1f2937" font-size="10">    password_hash</text><text x="228" y="151" text-anchor="end" fill="#9ca3af" font-size="10">VARCHAR(200)</text>
+            <line x1="20" y1="158" x2="230" y2="158" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="32"  y="173" fill="#1f2937" font-size="10">    role</text>         <text x="228" y="173" text-anchor="end" fill="#9ca3af" font-size="10">ENUM</text>
+            <line x1="20" y1="180" x2="230" y2="180" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="32"  y="195" fill="#1f2937" font-size="10">    created_at</text>   <text x="228" y="195" text-anchor="end" fill="#9ca3af" font-size="10">TIMESTAMPTZ</text>
+
+            <!-- ════ report (x=285, y=40, w=210) ════
+                 header: y=40..70
+                 PK id:         y=70..92
+                 title:         y=92..114
+                 description:   y=114..136
+                 category:      y=136..158
+                 status:        y=158..180
+                 latitude:      y=180..202
+                 longitude:     y=202..224
+                 created_at:    y=224..246
+                 updated_at:    y=246..268
+                 FK updated_by: y=268..290
+                 total height = 250  -->
+            <rect x="285" y="40" width="210" height="250" rx="4" fill="white" stroke="#6c63ff" stroke-width="1.5"/>
+            <rect x="285" y="40" width="210" height="30" rx="4" fill="#6c63ff"/>
+            <rect x="285" y="56" width="210" height="14" fill="#6c63ff"/>
+            <text x="390" y="61" text-anchor="middle" fill="white" font-weight="bold" font-size="12">report</text>
+            <!-- PK row -->
+            <rect x="285" y="70" width="210" height="22" fill="#f5f3ff"/>
+            <text x="297" y="85" fill="#5b21b6" font-weight="bold" font-size="10">PK  id</text>
+            <text x="493" y="85" text-anchor="end" fill="#9ca3af" font-size="10">BIGSERIAL</text>
+            <line x1="285" y1="92" x2="495" y2="92" stroke="#e5e7eb" stroke-width="1"/>
+            <!-- fields -->
+            <text x="297" y="107" fill="#1f2937" font-size="10">    title</text>       <text x="493" y="107" text-anchor="end" fill="#9ca3af" font-size="10">VARCHAR(120)</text>
+            <line x1="285" y1="114" x2="495" y2="114" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="129" fill="#1f2937" font-size="10">    description</text> <text x="493" y="129" text-anchor="end" fill="#9ca3af" font-size="10">TEXT</text>
+            <line x1="285" y1="136" x2="495" y2="136" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="151" fill="#1f2937" font-size="10">    category</text>    <text x="493" y="151" text-anchor="end" fill="#9ca3af" font-size="10">ENUM</text>
+            <line x1="285" y1="158" x2="495" y2="158" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="173" fill="#1f2937" font-size="10">    status</text>      <text x="493" y="173" text-anchor="end" fill="#9ca3af" font-size="10">ENUM</text>
+            <line x1="285" y1="180" x2="495" y2="180" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="195" fill="#1f2937" font-size="10">    latitude</text>    <text x="493" y="195" text-anchor="end" fill="#9ca3af" font-size="10">DECIMAL(9,6)</text>
+            <line x1="285" y1="202" x2="495" y2="202" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="217" fill="#1f2937" font-size="10">    longitude</text>   <text x="493" y="217" text-anchor="end" fill="#9ca3af" font-size="10">DECIMAL(9,6)</text>
+            <line x1="285" y1="224" x2="495" y2="224" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="239" fill="#1f2937" font-size="10">    created_at</text>  <text x="493" y="239" text-anchor="end" fill="#9ca3af" font-size="10">TIMESTAMPTZ</text>
+            <line x1="285" y1="246" x2="495" y2="246" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="297" y="261" fill="#1f2937" font-size="10">    updated_at</text>  <text x="493" y="261" text-anchor="end" fill="#9ca3af" font-size="10">TIMESTAMPTZ</text>
+            <line x1="285" y1="268" x2="495" y2="268" stroke="#e5e7eb" stroke-width="1"/>
+            <!-- FK row -->
+            <rect x="285" y="268" width="210" height="22" fill="#f5f3ff"/>
+            <text x="297" y="283" fill="#5b21b6" font-weight="bold" font-size="10">FK  updated_by</text>
+            <text x="493" y="283" text-anchor="end" fill="#9ca3af" font-size="10">BIGINT → user</text>
+
+            <!-- ════ photo (x=550, y=40, w=210) ════
+                 header: y=40..70
+                 PK id:       y=70..92
+                 FK report_id:y=92..114
+                 file_path:   y=114..136
+                 mime_type:   y=136..158
+                 uploaded_at: y=158..180
+                 total height = 140  -->
+            <rect x="550" y="40" width="210" height="140" rx="4" fill="white" stroke="#16a34a" stroke-width="1.5"/>
+            <rect x="550" y="40" width="210" height="30" rx="4" fill="#16a34a"/>
+            <rect x="550" y="56" width="210" height="14" fill="#16a34a"/>
+            <text x="655" y="61" text-anchor="middle" fill="white" font-weight="bold" font-size="12">photo</text>
+            <!-- PK row -->
+            <rect x="550" y="70" width="210" height="22" fill="#f0fdf4"/>
+            <text x="562" y="85" fill="#166534" font-weight="bold" font-size="10">PK  id</text>
+            <text x="758" y="85" text-anchor="end" fill="#9ca3af" font-size="10">BIGSERIAL</text>
+            <line x1="550" y1="92" x2="760" y2="92" stroke="#e5e7eb" stroke-width="1"/>
+            <!-- FK row -->
+            <rect x="550" y="92" width="210" height="22" fill="#f0fdf4"/>
+            <text x="562" y="107" fill="#166534" font-weight="bold" font-size="10">FK  report_id</text>
+            <text x="758" y="107" text-anchor="end" fill="#9ca3af" font-size="10">BIGINT → report</text>
+            <line x1="550" y1="114" x2="760" y2="114" stroke="#e5e7eb" stroke-width="1"/>
+            <!-- fields -->
+            <text x="562" y="129" fill="#1f2937" font-size="10">    file_path</text>   <text x="758" y="129" text-anchor="end" fill="#9ca3af" font-size="10">VARCHAR(500)</text>
+            <line x1="550" y1="136" x2="760" y2="136" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="562" y="151" fill="#1f2937" font-size="10">    mime_type</text>   <text x="758" y="151" text-anchor="end" fill="#9ca3af" font-size="10">VARCHAR(50)</text>
+            <line x1="550" y1="158" x2="760" y2="158" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="562" y="173" fill="#1f2937" font-size="10">    uploaded_at</text> <text x="758" y="173" text-anchor="end" fill="#9ca3af" font-size="10">TIMESTAMPTZ</text>
+
+            <!-- ── Relationships ── -->
+            <!-- user 1 ——— 0..* report  (horizontal, midpoint of PK row) -->
+            <line x1="230" y1="155" x2="285" y2="155" stroke="#64748b" stroke-width="1.5" marker-end="url(#dm-arr)"/>
+            <text x="233" y="150" fill="#64748b" font-size="9">1</text>
+            <text x="258" y="150" fill="#64748b" font-size="9">0..*</text>
+
+            <!-- report 1 ——— 0..* photo  (horizontal, y=103 = midpoint of photo PK row) -->
+            <line x1="495" y1="103" x2="550" y2="103" stroke="#64748b" stroke-width="1.5" marker-end="url(#dm-arr)"/>
+            <text x="498" y="98"  fill="#64748b" font-size="9">1</text>
+            <text x="523" y="98"  fill="#64748b" font-size="9">0..*</text>
+
+            <!-- ── Legend (plain text, no swatches) ── -->
+            <rect x="20" y="320" width="740" height="122" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+            <text x="36" y="340" fill="#374151" font-weight="bold" font-size="11">Legend</text>
+            <text x="36" y="358" fill="#374151" font-size="10">PK  — primary key (underlined in standard UML, highlighted row here)</text>
+            <text x="36" y="375" fill="#374151" font-size="10">FK  — foreign key (references another table, shown as "BIGINT → table")</text>
+            <text x="36" y="392" fill="#374151" font-size="10">All fields NOT NULL unless the type column shows no constraint.</text>
+            <line x1="36" y1="402" x2="724" y2="402" stroke="#e2e8f0" stroke-width="1"/>
+            <text x="36" y="418" fill="#6b7280" font-size="9">category: DEFECT · POLLUTION · PARKING     status: OPEN · IN_PROGRESS · RESOLVED     role: STAFF · ADMIN</text>
+          </svg>
+
+          <!-- ───────────── Detailed field-level specification ───────────── -->
+          <div style="margin-top:28px;">
+            <div style="font-size:0.95rem;font-weight:700;color:var(--text);margin-bottom:6px;">Detailed Specification</div>
+            <p style="font-size:0.82rem;color:var(--muted);margin:0 0 18px;line-height:1.55;">
+              Full column definitions for the three tables above &mdash; production-ready. <code>PK</code> = primary key, <code>FK</code> = foreign key, <code>U</code> = unique, <code>IX</code> = indexed. Design decisions: citizen reports are <strong>anonymous</strong> (no reporter account); only staff log in. Deleting a report <strong>cascades</strong> to its photos. The <code>photo</code> table models 1&nbsp;report&nbsp;&rarr;&nbsp;0..*&nbsp;photos; the Android UI allows one photo per report for now.
+            </p>
+
+            <style>
+              .dm-spec { width:100%; border-collapse:collapse; font-size:0.8rem; margin-bottom:26px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+              .dm-spec caption { caption-side:top; text-align:left; font-weight:700; font-size:0.9rem; padding:10px 12px; color:white; }
+              .dm-spec th { background:#f7f8fc; text-align:left; padding:8px 10px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:#8a8fa3; border-bottom:2px solid var(--border); white-space:nowrap; }
+              .dm-spec td { padding:7px 10px; border-bottom:1px solid #f0f0f4; vertical-align:top; line-height:1.4; }
+              .dm-spec tr:last-child td { border-bottom:none; }
+              .dm-spec code { font-size:0.76rem; background:#f4f4f8; padding:1px 5px; border-radius:4px; }
+              .dm-key { font-weight:700; font-size:0.68rem; color:#5b21b6; white-space:nowrap; }
+              .dm-null-no { color:#c0392b; font-weight:600; }
+              .dm-null-yes { color:#2e9e5b; font-weight:600; }
+            </style>
+
+            <!-- user -->
+            <table class="dm-spec">
+              <caption style="background:#d97706;">user &nbsp;<span style="font-weight:400;font-size:0.76rem;opacity:0.9;">· city staff accounts (the only authenticated actors)</span></caption>
+              <thead><tr><th>Key</th><th>Column</th><th>Type</th><th>Null</th><th>Default</th><th>Constraints &amp; notes</th></tr></thead>
+              <tbody>
+                <tr><td class="dm-key">PK</td><td><code>id</code></td><td>BIGSERIAL</td><td class="dm-null-no">NOT NULL</td><td>auto</td><td>Surrogate primary key, auto-increment.</td></tr>
+                <tr><td class="dm-key">U, IX</td><td><code>username</code></td><td>VARCHAR(80)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>Unique login name. Indexed for login lookup.</td></tr>
+                <tr><td class="dm-key">U</td><td><code>email</code></td><td>VARCHAR(200)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>Unique. CHECK: contains <code>@</code>. Used for account recovery / notifications.</td></tr>
+                <tr><td></td><td><code>password_hash</code></td><td>VARCHAR(200)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>BCrypt hash (never the plaintext). Produced by Spring Security.</td></tr>
+                <tr><td></td><td><code>role</code></td><td>VARCHAR(20) / ENUM</td><td class="dm-null-no">NOT NULL</td><td><code>'STAFF'</code></td><td>CHECK IN (<code>STAFF</code>, <code>ADMIN</code>). ADMIN may manage other staff accounts.</td></tr>
+                <tr><td></td><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td class="dm-null-no">NOT NULL</td><td><code>now()</code></td><td>Row creation timestamp, set by DB.</td></tr>
+              </tbody>
+            </table>
+
+            <!-- report -->
+            <table class="dm-spec">
+              <caption style="background:#6c63ff;">report &nbsp;<span style="font-weight:400;font-size:0.76rem;opacity:0.9;">· one citizen-submitted issue (anonymous)</span></caption>
+              <thead><tr><th>Key</th><th>Column</th><th>Type</th><th>Null</th><th>Default</th><th>Constraints &amp; notes</th></tr></thead>
+              <tbody>
+                <tr><td class="dm-key">PK</td><td><code>id</code></td><td>BIGSERIAL</td><td class="dm-null-no">NOT NULL</td><td>auto</td><td>Surrogate primary key.</td></tr>
+                <tr><td></td><td><code>title</code></td><td>VARCHAR(120)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>Short summary. CHECK length &ge; 3.</td></tr>
+                <tr><td></td><td><code>description</code></td><td>TEXT</td><td class="dm-null-yes">NULL</td><td>&mdash;</td><td>Optional free-text detail from the citizen.</td></tr>
+                <tr><td class="dm-key">IX</td><td><code>category</code></td><td>VARCHAR(20) / ENUM</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>CHECK IN (<code>DEFECT</code>, <code>POLLUTION</code>, <code>PARKING</code>). Indexed for staff filtering.</td></tr>
+                <tr><td class="dm-key">IX</td><td><code>status</code></td><td>VARCHAR(20) / ENUM</td><td class="dm-null-no">NOT NULL</td><td><code>'OPEN'</code></td><td>CHECK IN (<code>OPEN</code>, <code>IN_PROGRESS</code>, <code>RESOLVED</code>). Indexed.</td></tr>
+                <tr><td></td><td><code>latitude</code></td><td>DECIMAL(9,6)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>CHECK between &minus;90 and 90. 6 decimals &asymp; 0.11&nbsp;m precision.</td></tr>
+                <tr><td></td><td><code>longitude</code></td><td>DECIMAL(9,6)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>CHECK between &minus;180 and 180.</td></tr>
+                <tr><td></td><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td class="dm-null-no">NOT NULL</td><td><code>now()</code></td><td>Submission time, set by DB.</td></tr>
+                <tr><td></td><td><code>updated_at</code></td><td>TIMESTAMPTZ</td><td class="dm-null-yes">NULL</td><td>&mdash;</td><td>Set whenever staff edit the report.</td></tr>
+                <tr><td class="dm-key">FK</td><td><code>updated_by</code></td><td>BIGINT</td><td class="dm-null-yes">NULL</td><td>&mdash;</td><td>&rarr; <code>user(id)</code> ON DELETE SET NULL. NULL until a staff member first edits it.</td></tr>
+              </tbody>
+            </table>
+
+            <!-- photo -->
+            <table class="dm-spec">
+              <caption style="background:#16a34a;">photo &nbsp;<span style="font-weight:400;font-size:0.76rem;opacity:0.9;">· image attached to a report</span></caption>
+              <thead><tr><th>Key</th><th>Column</th><th>Type</th><th>Null</th><th>Default</th><th>Constraints &amp; notes</th></tr></thead>
+              <tbody>
+                <tr><td class="dm-key">PK</td><td><code>id</code></td><td>BIGSERIAL</td><td class="dm-null-no">NOT NULL</td><td>auto</td><td>Surrogate primary key.</td></tr>
+                <tr><td class="dm-key">FK, IX</td><td><code>report_id</code></td><td>BIGINT</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>&rarr; <code>report(id)</code> <strong>ON DELETE CASCADE</strong>. Indexed to fetch a report's photos.</td></tr>
+                <tr><td></td><td><code>file_path</code></td><td>VARCHAR(500)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>Relative path / object key. Image bytes live on disk/object storage, not in the DB.</td></tr>
+                <tr><td></td><td><code>mime_type</code></td><td>VARCHAR(50)</td><td class="dm-null-no">NOT NULL</td><td>&mdash;</td><td>CHECK IN (<code>image/jpeg</code>, <code>image/png</code>, <code>image/webp</code>).</td></tr>
+                <tr><td></td><td><code>uploaded_at</code></td><td>TIMESTAMPTZ</td><td class="dm-null-no">NOT NULL</td><td><code>now()</code></td><td>Upload timestamp, set by DB.</td></tr>
+              </tbody>
+            </table>
+
+            <!-- relationships summary -->
+            <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;background:#f8fafc;">
+              <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--text);">Relationships &amp; integrity rules</div>
+              <ul style="margin:0;padding-left:18px;font-size:0.8rem;line-height:1.7;color:#374151;">
+                <li><code>user</code> <strong>1</strong> &mdash; <strong>0..*</strong> <code>report</code> via <code>report.updated_by</code> (who last edited). A staff member edits many reports; a report has at most one last-editor.</li>
+                <li><code>report</code> <strong>1</strong> &mdash; <strong>0..*</strong> <code>photo</code> via <code>photo.report_id</code>. Deleting a report cascades to delete its photos.</li>
+                <li>No citizen table: reports are anonymous, so there is no <code>created_by</code> link.</li>
+                <li>Deleting a <code>user</code> sets <code>report.updated_by</code> to NULL (reports are preserved, edit attribution is cleared).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alternatives We Rejected -->
+      <div class="detail-card">
+        <div class="detail-card-header">Alternatives We Considered &amp; Why We Rejected Them <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· the decision record behind choosing Hybrid</span></div>
+        <div class="detail-card-body" style="padding:24px 28px;">
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 20px;line-height:1.55;">
+            Before settling on the Hybrid design, we evaluated three single-platform options against the assignment's core needs: citizens reporting <strong>in the field</strong> (needing camera + GPS), staff managing reports on a <strong>desk setup</strong>, and one <strong>shared data store</strong>. Each alternative failed on at least one of these. This record is kept for the written report.
+          </p>
+
+          <style>
+            .alt-grid { display:flex;flex-direction:column;gap:14px; }
+            .alt { border:1px solid var(--border);border-radius:10px;padding:16px 18px; }
+            .alt-head { display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap; }
+            .alt-name { font-weight:700;font-size:1rem; }
+            .alt-verdict { font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:12px;background:#dc262618;color:var(--red);text-transform:uppercase;letter-spacing:0.04em; }
+            .alt-cols { display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.82rem;line-height:1.5; }
+            .alt-cols .h { font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:#8a8fa3;font-weight:700;margin-bottom:4px; }
+            .alt-cols ul { margin:0;padding-left:16px; }
+            .alt-killer { margin-top:10px;font-size:0.82rem;line-height:1.5;padding:8px 12px;background:#fef2f2;border-left:3px solid var(--red);border-radius:4px; }
+            @media(max-width:620px){ .alt-cols{grid-template-columns:1fr;} }
+          </style>
+
+          <div class="alt-grid">
+
+            <!-- Web -->
+            <div class="alt">
+              <div class="alt-head">
+                <span style="font-size:1.2rem;">🌐</span>
+                <span class="alt-name">Web Application (browser app for both roles)</span>
+                <span class="alt-verdict">Rejected</span>
+              </div>
+              <div class="alt-cols">
+                <div><div class="h">In its favour</div><ul><li>One codebase, both roles</li><li>Leaflet.js + OSM work natively</li><li>No install — citizens open a URL</li><li>Easiest to demo (localhost)</li></ul></div>
+                <div><div class="h">Against</div><ul><li>No native camera/GPS in a desktop browser</li><li>Mobile photo capture needs WebView hacks</li><li>Weakest fit for field reporting</li></ul></div>
+              </div>
+              <div class="alt-killer"><strong>Dealbreaker:</strong> citizens report defects <em>outdoors, on their phones</em> — a browser can't reliably reach the camera and GPS the way a native app can. The core citizen use-case is compromised.</div>
+            </div>
+
+            <!-- Desktop -->
+            <div class="alt">
+              <div class="alt-head">
+                <span style="font-size:1.2rem;">🖥</span>
+                <span class="alt-name">Desktop Application (JavaFX, installed per machine)</span>
+                <span class="alt-verdict">Rejected</span>
+              </div>
+              <div class="alt-cols">
+                <div><div class="h">In its favour</div><ul><li>Pure Java — closest to team's known skills</li><li>Possible to avoid JavaScript entirely</li></ul></div>
+                <div><div class="h">Against</div><ul><li>Citizens won't install a desktop app</li><li>Map integration hardest of all options</li><li>Standalone → no shared data between users</li><li>Fragile WebView JS↔Java bridge; JRE packaging pain</li></ul></div>
+              </div>
+              <div class="alt-killer"><strong>Dealbreaker:</strong> a desktop install is a non-starter for citizens reporting on the move, and a standalone app can't give staff a shared, always-current view of all reports.</div>
+            </div>
+
+            <!-- Mobile-only -->
+            <div class="alt">
+              <div class="alt-head">
+                <span style="font-size:1.2rem;">📱</span>
+                <span class="alt-name">Mobile-only (one Android app for citizens AND staff)</span>
+                <span class="alt-verdict">Rejected</span>
+              </div>
+              <div class="alt-cols">
+                <div><div class="h">In its favour</div><ul><li>Native GPS + camera for citizens</li><li>Most realistic for the citizen side</li><li>High visual impact in a demo</li></ul></div>
+                <div><div class="h">Against</div><ul><li>Staff managing reports on a phone is poor UX</li><li>A separate staff UI becomes a second project anyway</li><li>Steepest learning curve; Android lifecycle complexity</li></ul></div>
+              </div>
+              <div class="alt-killer"><strong>Dealbreaker:</strong> staff need a wide-screen dashboard to triage, edit and delete reports — cramming that into a phone app is painful, and building a second staff UI defeats the "single platform" simplicity that made mobile-only attractive.</div>
+            </div>
+
+            <!-- Why Hybrid won -->
+            <div class="alt" style="border-color:var(--hybrid);background:#c35bd108;">
+              <div class="alt-head">
+                <span style="font-size:1.2rem;">🏛</span>
+                <span class="alt-name" style="color:var(--hybrid);">Hybrid (Android citizens + Web staff + shared backend)</span>
+                <span class="alt-verdict" style="background:#c35bd118;color:var(--hybrid);">Chosen</span>
+              </div>
+              <div style="font-size:0.84rem;line-height:1.55;">
+                Hybrid is the only option that serves <strong>both</strong> actors on the device that fits them: a <strong>native Android app</strong> gives citizens real camera + GPS in the field, while a <strong>web dashboard</strong> gives staff a proper wide-screen management view — both backed by <strong>one shared Spring Boot + PostgreSQL backend</strong>, so all data is consistent and live. The cost we accepted: it is the most work (two frontends) and requires both Java and JavaScript. We judged that trade-off worthwhile because it's the only design with no compromise on either core use-case.
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /view-hybrid -->
+
+  <!-- ════════════════════════════════════════════════════════
+       PROJECT VIEW
+  ════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-project">
+    <div class="project-page">
+
+      <!-- Team -->
+      <div class="detail-card">
+        <div class="detail-card-header">Team Roles &amp; Responsibilities <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· click a member to filter the task board</span></div>
+        <div class="detail-card-body" style="padding:0;">
+          <table class="team-table">
+            <thead>
+              <tr>
+                <th style="width:130px">Member</th>
+                <th style="width:200px">Project Role</th>
+                <th>Presentation Section</th>
+                <th>Report Chapters</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-owner="Simon">
+                <td><div class="member-name">Simon<span class="member-you">you</span></div></td>
+                <td>
+                  <div class="role-primary">Architecture Lead · Backend Dev</div>
+                  <div class="role-secondary">Owns API design, Spring Boot implementation, data model. Primary contact for all technical architecture questions.</div>
+                </td>
+                <td>
+                  <span class="pres-topic">Software Architecture</span>
+                  <span class="pres-topic">Technical Stack</span>
+                  <span class="pres-topic">Live Demo</span>
+                </td>
+                <td>
+                  <span class="report-topic">Architecture</span>
+                  <span class="report-topic">API Design</span>
+                  <span class="report-topic">Data Model</span>
+                </td>
+              </tr>
+              <tr data-owner="Anna">
+                <td><div class="member-name">Anna</div></td>
+                <td>
+                  <div class="role-primary">Flow Master · Project Management</div>
+                  <div class="role-secondary">Owns the Kanban board: maintains the backlog, enforces WIP limits, tracks flow, organises syncs, removes blockers. Also contributes to Android frontend.</div>
+                </td>
+                <td>
+                  <span class="pres-topic">Project Management</span>
+                  <span class="pres-topic">Process Model</span>
+                </td>
+                <td>
+                  <span class="report-topic">Project Management</span>
+                  <span class="report-topic">Kanban Process</span>
+                </td>
+              </tr>
+              <tr data-owner="Yoana">
+                <td><div class="member-name">Yoana</div></td>
+                <td>
+                  <div class="role-primary">Android Developer · Citizen UI</div>
+                  <div class="role-secondary">Owns the Android app: map fragment, camera, GPS, Retrofit integration with the backend API.</div>
+                </td>
+                <td>
+                  <span class="pres-topic">Functions (Citizen)</span>
+                  <span class="pres-topic">Android Implementation</span>
+                </td>
+                <td>
+                  <span class="report-topic">Android Frontend</span>
+                  <span class="report-topic">Functional Requirements</span>
+                </td>
+              </tr>
+              <tr data-owner="Charlene">
+                <td><div class="member-name">Charlene</div></td>
+                <td>
+                  <div class="role-primary">Web Developer · Staff UI</div>
+                  <div class="role-secondary">Owns the staff web dashboard: Leaflet map overview, report table, edit/delete flows, login.</div>
+                </td>
+                <td>
+                  <span class="pres-topic">Functions (Staff)</span>
+                  <span class="pres-topic">Web Implementation</span>
+                </td>
+                <td>
+                  <span class="report-topic">Web Frontend</span>
+                  <span class="report-topic">Staff Features</span>
+                </td>
+              </tr>
+              <tr data-owner="Louis">
+                <td><div class="member-name">Louis</div></td>
+                <td>
+                  <div class="role-primary">QA Lead · Documentation</div>
+                  <div class="role-secondary">Writes and runs tests (unit, integration, UAT). Owns technical documentation and the written report structure.</div>
+                </td>
+                <td>
+                  <span class="pres-topic">Quality Assurance</span>
+                  <span class="pres-topic">User Testing</span>
+                  <span class="pres-topic">Tools &amp; AI</span>
+                </td>
+                <td>
+                  <span class="report-topic">Testing</span>
+                  <span class="report-topic">QA</span>
+                  <span class="report-topic">Tools Used</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Process Model -->
+      <div class="detail-card">
+        <div class="detail-card-header">Process Model <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· how we run the project &mdash; and why</span></div>
+        <div class="detail-card-body" style="padding:22px 26px;">
+          <p style="font-size:0.9rem;line-height:1.6;margin:0 0 16px;color:var(--text);">
+            We use a <strong>Kanban</strong> process: work is visualised on a board (To&nbsp;Do&nbsp;&rarr;&nbsp;In&nbsp;Progress&nbsp;&rarr;&nbsp;Done), pulled when a member has capacity, with <strong>work-in-progress (WIP) limits</strong> to keep focus and surface bottlenecks. The board is organised into milestone phases that align with the course's interim-review deadlines.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+            <div style="flex:1 1 260px;border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+              <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:#8a8fa3;font-weight:700;margin-bottom:6px;">Kanban practices we follow</div>
+              <ul style="margin:0;padding-left:16px;font-size:0.82rem;line-height:1.6;">
+                <li>Visualise all work on the board</li>
+                <li>WIP limit: <strong>max 2 cards In Progress per person</strong></li>
+                <li>Pull-based: take the next card when free</li>
+                <li>Weekly team sync + a shared group chat for blockers</li>
+              </ul>
+            </div>
+            <div style="flex:1 1 260px;border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:#f8fafc;">
+              <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:#8a8fa3;font-weight:700;margin-bottom:6px;">Why Kanban, not pure Scrum</div>
+              <p style="margin:0;font-size:0.82rem;line-height:1.55;color:#374151;">
+                Pure Scrum assumes a dedicated, full-time team with a real Product Owner and daily standups. As five <strong>part-time students</strong> with no external customer and fixed external deadlines, that ceremony overhead didn't fit. Kanban's lighter, flow-based approach does &mdash; we keep a backlog, defined roles, and a board, but replace daily standups with a weekly sync and manage flow with WIP limits rather than fixed sprint commitments.
+              </p>
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--muted);margin:0;line-height:1.5;">
+            The live task board is maintained on <strong>GitHub Projects</strong> so the whole team can update it in real time. The phase overview below mirrors how the board is grouped.
+          </p>
+        </div>
+      </div>
+
+      <!-- Sprint timeline -->
+      <div class="detail-card">
+        <div class="detail-card-header">Phase Plan</div>
+        <div class="detail-card-body" style="padding:0;">
+          <div class="sprint-timeline">
+
+            <div class="sprint-block active-phase" data-sprint="Sprint 1">
+              <div class="sprint-num">Sprint 1</div>
+              <div class="sprint-name">Setup &amp; Architecture</div>
+              <div class="sprint-goal">Platform decided, architecture defined, team organised, tools agreed, product backlog created.</div>
+              <div class="sprint-deliverables">
+                <div class="sprint-del">Platform decision ✓</div>
+                <div class="sprint-del">High-level architecture</div>
+                <div class="sprint-del">API contract (endpoint list)</div>
+                <div class="sprint-del">ER / data model</div>
+                <div class="sprint-del">UML use-case diagram</div>
+                <div class="sprint-del">Product Backlog</div>
+                <div class="sprint-del">Team roles assigned</div>
+              </div>
+              <span class="sprint-status status-active">In Progress</span>
+            </div>
+
+            <div class="sprint-block" data-sprint="Sprint 2">
+              <div class="sprint-num">Sprint 2</div>
+              <div class="sprint-name">Requirements &amp; Design</div>
+              <div class="sprint-goal">All requirements formally documented. UML diagrams, ER model, SOLID review complete.</div>
+              <div class="sprint-deliverables">
+                <div class="sprint-del">Lastenheft + Pflichtenheft</div>
+                <div class="sprint-del">Persona documents</div>
+                <div class="sprint-del">UML use-case diagram</div>
+                <div class="sprint-del">UML class diagram</div>
+                <div class="sprint-del">Sequence diagrams</div>
+                <div class="sprint-del">Detailed ER model</div>
+                <div class="sprint-del">SOLID architecture review</div>
+              </div>
+              <span class="sprint-status status-pending">Pending</span>
+            </div>
+
+            <div class="sprint-block" data-sprint="Sprint 3">
+              <div class="sprint-num">Sprint 3</div>
+              <div class="sprint-name">Core Implementation</div>
+              <div class="sprint-goal">All three components working. Backend API complete, Android citizen flow, Web staff skeleton.</div>
+              <div class="sprint-deliverables">
+                <div class="sprint-del">Spring Boot REST API</div>
+                <div class="sprint-del">PostgreSQL schema + JPA entities</div>
+                <div class="sprint-del">Android: map + form + camera</div>
+                <div class="sprint-del">Web: report table + dashboard</div>
+                <div class="sprint-del">Photo upload + storage</div>
+                <div class="sprint-del">Staff login (session/JWT)</div>
+              </div>
+              <span class="sprint-status status-pending">Pending</span>
+            </div>
+
+            <div class="sprint-block" data-sprint="Sprint 4">
+              <div class="sprint-num">Sprint 4</div>
+              <div class="sprint-name">Integration &amp; Testing</div>
+              <div class="sprint-goal">All components integrated end-to-end. Tests written and passing. Optional features added if time allows.</div>
+              <div class="sprint-deliverables">
+                <div class="sprint-del">End-to-end integration test</div>
+                <div class="sprint-del">Unit tests (backend services)</div>
+                <div class="sprint-del">User acceptance test (UAT)</div>
+                <div class="sprint-del">Bug fixes from testing</div>
+                <div class="sprint-del">Optional: GPS auto-fill, status tracking</div>
+                <div class="sprint-del">Demo script prepared</div>
+              </div>
+              <span class="sprint-status status-pending">Pending</span>
+            </div>
+
+            <div class="sprint-block" data-sprint="Sprint 5">
+              <div class="sprint-num">Sprint 5</div>
+              <div class="sprint-name">Docs, Report &amp; Presentation</div>
+              <div class="sprint-goal">All deliverables finalised and submitted.</div>
+              <div class="sprint-deliverables">
+                <div class="sprint-del">Written report (~20 pages)</div>
+                <div class="sprint-del">Technical documentation</div>
+                <div class="sprint-del">Presentation slides (PDF)</div>
+                <div class="sprint-del">Source code ZIP</div>
+                <div class="sprint-del">Live demo rehearsal</div>
+                <div class="sprint-del">Submission 08.01.2027</div>
+              </div>
+              <span class="sprint-status status-pending">Pending</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Live task board (hosted on GitHub Projects) -->
+      <div class="detail-card">
+        <div class="detail-card-header">Task Board</div>
+        <div class="detail-card-body">
+          <p style="margin:0 0 14px 0;line-height:1.6;color:var(--text)">
+            The live task board is a <strong>GitHub Projects Kanban</strong> (columns: To&nbsp;Do&nbsp;&rarr;&nbsp;In&nbsp;Progress&nbsp;&rarr;&nbsp;Done). Every task is a GitHub Issue labelled by phase and owner. Group or filter by owner to see each member's work; drag cards to move them between columns. This is the single, always-current source of task state &mdash; this page only links to it.
+          </p>
+          <a href="https://github.com/users/Ya-3ars/projects/1" target="_blank" rel="noopener"
+             style="display:inline-block;background:#6c63ff;color:#fff;font-weight:700;font-size:0.9rem;padding:10px 20px;border-radius:8px;text-decoration:none">
+            Open the live board on GitHub &rarr;
+          </a>
+          <div style="margin-top:10px;font-size:0.8rem;color:var(--muted)">
+            Repo: <a href="https://github.com/Ya-3ars/sep-citizen-reporting" target="_blank" rel="noopener" style="color:#6c63ff">github.com/Ya-3ars/sep-citizen-reporting</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /view-project -->
+
+</div><!-- /main -->
+
+<script>
+// req filters: empty set = no filter active (show all for that dimension)
+const reqFilters = {
+  type:     new Set(),
+  role:     new Set(),
+  source:   new Set(),
+  priority: new Set(),
+};
+
+// ── TABS ──
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + t.dataset.view).classList.add('active');
+  });
+});
+
+// ── REQ FILTER CHIPS ──
+// Empty set = no active filter for that dimension (show all)
+// Non-empty set = only show rows matching one of the selected values
+document.querySelectorAll('.chip[data-rf]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('sel');
+    const dim = chip.dataset.rf;
+    const val = chip.dataset.rv;
+    if (chip.classList.contains('sel')) reqFilters[dim].add(val);
+    else reqFilters[dim].delete(val);
+    updateReqTable();
+  });
+});
+
+function updateReqTable() {
+  const dataRows = document.querySelectorAll('#reqTable tbody tr[data-type]');
+  dataRows.forEach(row => {
+    const show =
+      (reqFilters.type.size     === 0 || reqFilters.type.has(row.dataset.type))         &&
+      (reqFilters.role.size     === 0 || reqFilters.role.has(row.dataset.role))         &&
+      (reqFilters.source.size   === 0 || reqFilters.source.has(row.dataset.source))     &&
+      (reqFilters.priority.size === 0 || reqFilters.priority.has(row.dataset.priority));
+    row.style.display = show ? '' : 'none';
+  });
+  const anyVisible = [...dataRows].some(r => r.style.display !== 'none');
+  document.getElementById('req-empty').style.display = anyVisible ? 'none' : 'block';
+  document.getElementById('req-table-wrap').style.display = anyVisible ? '' : 'none';
+}
+
+// ── Tech info drawer ─────────────────────────────────────────────
+const TECH_DATA = {
+  'java': {
+    title: 'Java',
+    category: 'Language · Android + Backend',
+    what: 'Java is a compiled, statically-typed, object-oriented language that runs on the Java Virtual Machine (JVM). It has been the primary language for Android development since the platform launched in 2008, and is the dominant language for enterprise backends via the Spring ecosystem.',
+    why: 'The course constraint requires Java and/or JavaScript. Java covers both the Android app and the Spring Boot backend in one language, so the whole team shares one language for the two heaviest components. It also has the best tooling support in Android Studio and IntelliJ.',
+    how: 'Android code is written in Java and compiled to Dalvik/ART bytecode. Backend code compiles to JVM bytecode and runs inside the embedded Tomcat server that Spring Boot ships with. No separate server installation needed — the JAR is self-contained.',
+    install: '# Android Studio bundles its own JDK — nothing extra needed.\n# For the backend, install JDK 21 (LTS):\nbrew install openjdk@21\n\n# Verify:\njava -version'
+  },
+  'javascript': {
+    title: 'JavaScript',
+    category: 'Language · Web Dashboard',
+    what: 'JavaScript is the only language natively understood by browsers. It runs client-side — meaning the user\'s browser executes it, no server round-trip needed for UI interactions.',
+    why: 'The staff dashboard is a web page. JavaScript is the only real option for browser-side logic. We use Vanilla JS (no framework) to keep the project simple — no build step, no npm, just a .js file the browser loads directly.',
+    how: 'Write .js files, link them with <script src="..."> in the HTML. The browser runs them directly. fetch() calls hit the Spring Boot REST API for all data operations.',
+    install: '# No installation needed — every modern browser runs JavaScript.\n# Optional: install Node.js only if you want a local dev server:\nbrew install node\nnpx serve .\n\n# Or just open the HTML file directly in Chrome/Firefox.'
+  },
+  'android-sdk': {
+    title: 'Android SDK',
+    category: 'Framework · Android App',
+    what: 'The Android SDK (Software Development Kit) is the complete set of tools, libraries, and APIs that Google provides to build Android apps. It includes everything from UI components (Activities, Fragments) to system services (camera, GPS, notifications).',
+    why: 'There is no alternative — if you build an Android app, you use the Android SDK. It gives native access to the device hardware (GPS, camera) which is exactly what the citizen flow needs.',
+    how: 'Every Android class you write extends SDK classes. ReportFragment extends Fragment. You define layouts in XML and inflate them in Java. The SDK handles the Activity lifecycle, permissions, and device integration.',
+    install: '# Download Android Studio (includes the SDK):\n# https://developer.android.com/studio\n\n# Android Studio installs the SDK automatically.\n# Recommended SDK version: API 26+ (covers ~95% of devices).\n# In Android Studio → SDK Manager → install SDK Platform 33 or 34.'
+  },
+  'osmdroid': {
+    title: 'OSMDroid',
+    category: 'Library · Android Map',
+    what: 'OSMDroid is an open-source Android library that displays OpenStreetMap tiles inside a native Android View. It is a drop-in replacement for Google Maps that requires no API key and has no usage limits.',
+    why: 'Google Maps requires a paid API key and has usage billing after a free tier. OSMDroid is completely free, uses the same OpenStreetMap data as Leaflet on the web, and works offline if you cache tiles. For a university project with no budget it is the obvious choice.',
+    how: 'Add it as a Gradle dependency. Replace your layout XML MapView with org.osmdroid.views.MapView. In Java: set the tile source, enable GPS overlays, and add a Marker at the citizen\'s location when they pin a report.',
+    install: '# In app/build.gradle, add to dependencies:\nimplementation \'org.osmdroid:osmdroid-android:6.1.18\'\n\n# In AndroidManifest.xml, add permissions:\n<uses-permission android:name="android.permission.INTERNET"/>\n<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>'
+  },
+  'fusedlocation': {
+    title: 'FusedLocationProviderClient',
+    category: 'API · Android GPS',
+    what: 'Part of Google Play Services. It is Android\'s recommended way to get the device\'s current location. It "fuses" GPS, Wi-Fi, and cell-tower data to give the most accurate position with the lowest battery drain.',
+    why: 'The raw GPS API is complex and battery-hungry. FusedLocation handles all the sensor fusion automatically. A single API call gives you lat/lng in seconds. This is what auto-fills the map pin when a citizen starts a new report.',
+    how: 'Request the ACCESS_FINE_LOCATION permission at runtime. Then call fusedLocationClient.getLastLocation() or requestLocationUpdates() to receive a Location object with latitude and longitude.',
+    install: '# In app/build.gradle:\nimplementation \'com.google.android.gms:play-services-location:21.2.0\'\n\n# Runtime permission request in Java (Android 6+):\nActivityCompat.requestPermissions(this,\n  new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);'
+  },
+  'camera-intent': {
+    title: 'Camera Intent',
+    category: 'Android API · Photo Capture',
+    what: 'An Intent is Android\'s message-passing system between apps. The Camera Intent launches the device\'s built-in camera app and returns the captured photo to your app — without you having to build a camera UI yourself.',
+    why: 'Building a custom camera from scratch (Camera2 API) is weeks of work. The Camera Intent delegates to the system camera app, which citizens already know how to use. One line of code triggers it; one callback receives the result.',
+    how: 'Create an Intent with MediaStore.ACTION_IMAGE_CAPTURE, provide a FileProvider URI for where to save the full-res image, and start the activity with startActivityForResult(). Handle the returned URI in onActivityResult().',
+    install: '# No extra dependency — part of the Android SDK.\n\n# In AndroidManifest.xml, declare the FileProvider:\n<provider\n  android:name="androidx.core.content.FileProvider"\n  android:authorities="${applicationId}.fileprovider"\n  android:exported="false"\n  android:grantUriPermissions="true">\n  <meta-data android:name="android.support.FILE_PROVIDER_PATHS"\n    android:resource="@xml/file_paths"/>\n</provider>'
+  },
+  'retrofit': {
+    title: 'Retrofit 2',
+    category: 'Library · Android HTTP Client',
+    what: 'Retrofit is a type-safe HTTP client for Android and Java made by Square. You define your REST API as a Java interface with annotations, and Retrofit generates all the HTTP boilerplate (request building, JSON parsing, error handling) automatically.',
+    why: 'Without Retrofit you\'d write raw HttpURLConnection calls with manual JSON parsing — hundreds of lines of error-prone boilerplate. Retrofit reduces a REST call to a 3-line interface definition. It also integrates with Gson for automatic JSON↔Java object conversion.',
+    how: 'Define an interface: @POST("api/reports") Call<Report> createReport(@Body ReportRequest body). Build a Retrofit instance with the backend base URL. Call the interface method and handle the response asynchronously with a Callback.',
+    install: '# In app/build.gradle:\nimplementation \'com.squareup.retrofit2:retrofit:2.11.0\'\nimplementation \'com.squareup.retrofit2:converter-gson:2.11.0\'\n\n# Gson converter handles JSON automatically.\n# Also add internet permission in AndroidManifest.xml.'
+  },
+  'vanilla-js': {
+    title: 'Vanilla JavaScript',
+    category: 'Language · Web Dashboard',
+    what: '"Vanilla JS" means plain JavaScript with no framework — no React, no Vue, no Angular. Just the browser\'s built-in APIs: document.querySelector(), fetch(), addEventListener(), etc.',
+    why: 'A framework like React adds significant complexity (npm, build steps, component lifecycle, JSX). The staff dashboard is a relatively simple CRUD UI — a table, a map, and a few modals. Vanilla JS is sufficient and keeps the project understandable for the whole team without a learning curve.',
+    how: 'Write .html + .js files. Use fetch() to call the Spring Boot API. Manipulate the DOM directly to update the report table and map markers. No build step — open in browser or serve with any static file server.',
+    install: '# Nothing to install. Any text editor + any browser.\n\n# Optional: VS Code with the Live Server extension\n# gives you auto-reload on save:\n# VS Code → Extensions → "Live Server" by Ritwick Dey\n# Right-click index.html → "Open with Live Server"'
+  },
+  'leaflet': {
+    title: 'Leaflet.js',
+    category: 'Library · Web Map',
+    what: 'Leaflet is the most widely used open-source JavaScript library for interactive maps. It renders map tiles in an HTML <div>, lets you place markers and draw shapes, and handles zoom/pan interactions. It weighs only ~42kb.',
+    why: 'Google Maps JS API requires billing credentials. Leaflet is free, works with OpenStreetMap tiles (also free), and has a very simple API. The staff dashboard needs to show all report pins on a map — Leaflet does this in ~10 lines of JS.',
+    how: 'Include Leaflet\'s CSS and JS via CDN. Create a map: L.map("map-div").setView([lat, lng], zoom). Add OpenStreetMap tiles. Add markers with L.marker([lat, lng]).addTo(map). Bind popups with report details.',
+    install: '# No installation — link via CDN in your HTML <head>:\n<link rel="stylesheet"\n  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>\n<script\n  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">\n<\/script>\n\n# That is all. No npm, no build step.'
+  },
+  'osm': {
+    title: 'OpenStreetMap',
+    category: 'Data Source · Map Tiles',
+    what: 'OpenStreetMap (OSM) is a free, editable map of the world maintained by a community of volunteers — the Wikipedia of maps. It provides the actual map image tiles that Leaflet (web) and OSMDroid (Android) display.',
+    why: 'Google Maps tiles are paid. OSM tiles from tile.openstreetmap.org are completely free with no API key and no usage limits for reasonable traffic. For a university project this is the only sensible choice.',
+    how: 'You do not interact with OSM directly in code. Leaflet and OSMDroid both fetch tiles automatically from the OSM tile servers when you set them as the tile source. The tiles are PNG images served over HTTPS.',
+    install: '# No installation or account needed.\n\n# Leaflet uses OSM tiles automatically:\nL.tileLayer(\n  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",\n  { attribution: "© OpenStreetMap contributors" }\n).addTo(map);\n\n# OSMDroid uses OSM tiles as its default tile source.'
+  },
+  'spring-boot': {
+    title: 'Spring Boot 3',
+    category: 'Framework · Backend REST API',
+    what: 'Spring Boot is a Java framework that makes it trivial to build production-ready REST APIs. It bundles an embedded web server (Tomcat), dependency injection, database access, security, and dozens of other modules — all auto-configured with sensible defaults.',
+    why: 'The course requires Java for the backend. Spring Boot is the industry standard for Java REST APIs. It removes almost all configuration boilerplate — you annotate a class with @RestController and a method with @GetMapping and you have a working endpoint. The alternative (plain Jakarta EE) requires configuring an external application server.',
+    how: 'Create a project at start.spring.io with dependencies: Spring Web, Spring Data JPA, Spring Security, PostgreSQL Driver. Run with mvn spring-boot:run. The embedded Tomcat starts on port 8080. Annotate controller methods to define endpoints.',
+    install: '# Prerequisites: JDK 21, Maven\nbrew install openjdk@21 maven\n\n# Generate project:\n# Go to https://start.spring.io\n# Select: Maven, Java 21, Spring Boot 3.x\n# Add dependencies: Spring Web, Spring Data JPA,\n#   Spring Security, PostgreSQL Driver\n# Download ZIP, unzip, open in IntelliJ\n\nmvn spring-boot:run   # starts on localhost:8080'
+  },
+  'spring-security': {
+    title: 'Spring Security',
+    category: 'Library · Authentication & Authorisation',
+    what: 'Spring Security is the standard security framework for Spring applications. It handles authentication (who are you?) and authorisation (what are you allowed to do?) via a filter chain that intercepts every incoming HTTP request.',
+    why: 'Staff-only endpoints (edit, delete) must be protected — citizens should not be able to call them. Spring Security makes it easy to require a valid login session for specific URL patterns and reject all others. Without it, anyone who knows the API URL could delete reports.',
+    how: 'Add a SecurityConfig class that extends WebSecurityConfigurerAdapter (or uses the newer lambda DSL). Define which endpoints are public (POST /api/reports for citizen submissions) and which require ROLE_STAFF (all admin endpoints). Use HTTP Basic or session-based auth for simplicity.',
+    install: '# Already included if you selected "Spring Security"\n# at start.spring.io. Otherwise add to pom.xml:\n<dependency>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-security</artifactId>\n</dependency>\n\n# Warning: adding Spring Security locks ALL endpoints\n# by default. Configure your SecurityConfig immediately.'
+  },
+  'spring-jpa': {
+    title: 'Spring Data JPA',
+    category: 'Library · Database Access',
+    what: 'JPA (Java Persistence API) is the Java standard for mapping Java objects to database tables. Spring Data JPA wraps JPA (using Hibernate as the implementation) and generates database queries automatically from method names — no SQL required for basic operations.',
+    why: 'Writing raw JDBC (SQL in Java strings) is tedious and error-prone. With Spring Data JPA you define a Report class annotated with @Entity, create a ReportRepository interface, and Spring generates findAll(), findById(), save(), delete() automatically. Complex queries can still use @Query with JPQL or native SQL.',
+    how: 'Annotate your model class with @Entity and @Table. Mark the primary key field with @Id @GeneratedValue. Create an interface extending JpaRepository<Report, Long>. Spring instantiates it at startup. Inject it into your service with @Autowired.',
+    install: '# Included via start.spring.io selection.\n# Also add the PostgreSQL driver:\n<dependency>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-data-jpa</artifactId>\n</dependency>\n<dependency>\n  <groupId>org.postgresql</groupId>\n  <artifactId>postgresql</artifactId>\n  <scope>runtime</scope>\n</dependency>\n\n# Configure in application.properties:\nspring.datasource.url=jdbc:postgresql://localhost:5432/cityreports\nspring.datasource.username=postgres\nspring.datasource.password=yourpassword\nspring.jpa.hibernate.ddl-auto=update'
+  },
+  'postgresql': {
+    title: 'PostgreSQL',
+    category: 'Database',
+    what: 'PostgreSQL is a powerful, open-source relational database. It stores data in tables with rows and columns, enforces constraints (NOT NULL, UNIQUE, foreign keys), and supports complex queries with SQL. It is widely regarded as the most feature-complete open-source SQL database.',
+    why: 'The app needs to persist reports, users, and photos reliably with proper relationships (a photo belongs to a report, a report was last edited by a user). A relational DB with foreign key constraints is the right tool. PostgreSQL is free, production-grade, and has first-class Spring Data JPA support.',
+    how: 'Spring Boot connects to PostgreSQL via JDBC. Spring Data JPA uses Hibernate to auto-create/update the schema based on your @Entity classes. You never write CREATE TABLE manually in development — Hibernate generates it. In production you would use proper migrations (Flyway/Liquibase).',
+    install: '# Install PostgreSQL locally:\nbrew install postgresql@16\nbrew services start postgresql@16\n\n# Create the database:\npsql postgres\nCREATE DATABASE cityreports;\nCREATE USER appuser WITH PASSWORD \'secret\';\nGRANT ALL PRIVILEGES ON DATABASE cityreports TO appuser;\n\n# Or use Docker (easier):\ndocker run --name pg -e POSTGRES_PASSWORD=secret \\\n  -e POSTGRES_DB=cityreports -p 5432:5432 -d postgres:16'
+  },
+  'openapi': {
+    title: 'OpenAPI / Swagger',
+    category: 'Tooling · API Documentation',
+    what: 'OpenAPI is a standard format for describing REST APIs (what endpoints exist, what parameters they take, what they return). Swagger is the toolset that generates interactive HTML documentation from that description. springdoc-openapi auto-generates both from Spring annotations.',
+    why: 'With Android and Web teams both calling the same backend, they need to know exactly what the API looks like. Without a contract, both teams make assumptions and break each other at integration time. OpenAPI generates a live, always-up-to-date API reference at /swagger-ui.html — anyone can try endpoints directly in the browser.',
+    how: 'Add the springdoc-openapi dependency. Zero additional configuration needed — it scans your @RestController classes and generates the spec automatically. Open http://localhost:8080/swagger-ui.html to see and test all endpoints interactively.',
+    install: '# Add to pom.xml:\n<dependency>\n  <groupId>org.springdoc</groupId>\n  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>\n  <version>2.5.0</version>\n</dependency>\n\n# That is all. Start the app and visit:\n# http://localhost:8080/swagger-ui.html\n# The API spec is also available as JSON at:\n# http://localhost:8080/v3/api-docs'
+  }
+};
+
+function openTechDrawer(techKey) {
+  const data = TECH_DATA[techKey];
+  if (!data) return;
+  document.querySelectorAll('.tech-info-tag').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tech="' + techKey + '"]').classList.add('active');
+  document.getElementById('tech-drawer-title').textContent = data.title;
+  document.getElementById('tech-drawer-category').textContent = data.category;
+  const sections = [
+    { label: 'What is it?',        text: data.what },
+    { label: 'Why did we choose it?', text: data.why },
+    { label: 'How do we use it?',  text: data.how },
+    { label: 'Installation',       code: data.install },
+  ];
+  document.getElementById('tech-drawer-body').innerHTML = sections.map(s => `
+    <div class="tech-drawer-section">
+      <div class="tech-drawer-section-title">${s.label}</div>
+      ${s.code
+        ? `<div class="tech-drawer-install">${s.code.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/(#[^\n]*)/g,'<span class="cmd-comment">$1</span>')}</div>`
+        : `<div class="tech-drawer-section-body">${s.text}</div>`}
+    </div>`).join('');
+  document.getElementById('tech-drawer-overlay').style.display = 'block';
+  const drawer = document.getElementById('tech-drawer');
+  drawer.style.display = 'flex';
+  drawer.scrollTop = 0;
+}
+
+function closeTechDrawer() {
+  document.getElementById('tech-drawer-overlay').style.display = 'none';
+  document.getElementById('tech-drawer').style.display = 'none';
+  document.querySelectorAll('.tech-info-tag').forEach(t => t.classList.remove('active'));
+}
+
+document.querySelectorAll('.tech-info-tag').forEach(tag => {
+  tag.addEventListener('click', () => openTechDrawer(tag.dataset.tech));
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTechDrawer(); });
+// ── end tech info drawer ──────────────────────────────────────────
+</script>
+</body>
+</html>
