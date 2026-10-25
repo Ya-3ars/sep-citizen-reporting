@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Platform Decision — SEP WS 2026/27</title>
+<title>Project Overview — SEP WS 2026/27</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -269,23 +269,14 @@ header span { color: #8899bb; font-size: 0.85rem; }
 /* phase timeline */
 .phase-timeline { display: flex; flex-direction: column; gap: 10px; }
 .phase-block { display: grid; grid-template-columns: 56px 1fr; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; position: relative; }
-.phase-block.active-phase { background: #6c63ff08; border-color: #6c63ff55; box-shadow: 0 0 0 1px #6c63ff22; }
-.phase-block.done-phase { background: #f0fdf422; }
 .phase-rail { display: flex; flex-direction: column; align-items: center; }
 .phase-badge { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 800; background: #f1f5f9; color: #64748b; border: 2px solid var(--border); }
-.phase-block.active-phase .phase-badge { background: #6c63ff; color: #fff; border-color: #6c63ff; }
-.phase-block.done-phase .phase-badge { background: #dcfce7; color: #166534; border-color: #86efac; }
 .phase-body { min-width: 0; }
 .phase-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .phase-name { font-size: 1rem; font-weight: 700; color: var(--text); }
 .phase-goal { font-size: 0.78rem; color: var(--muted); line-height: 1.45; margin-bottom: 10px; }
 .phase-deliverables { display: flex; flex-wrap: wrap; gap: 6px; }
 .phase-del { font-size: 0.72rem; color: #475569; background: #f7f8fc; border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; }
-.phase-del.done-del { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-.phase-status { display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 3px 9px; border-radius: 8px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
-.status-done     { background: #dcfce7; color: #166534; }
-.status-active   { background: #6c63ff18; color: #6c63ff; }
-.status-pending  { background: #f1f5f9; color: #64748b; }
 
 /* team table */
 .team-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
@@ -329,7 +320,7 @@ header span { color: #8899bb; font-size: 0.85rem; }
 <body>
 
 <header>
-  <h1>Platform Decision — SEP WS 2026/27</h1>
+  <h1>Project Overview — SEP WS 2026/27</h1>
   <span>Citizen Reporting App &nbsp;·&nbsp; SEP WS 2026/27 &nbsp;·&nbsp; design, requirements &amp; project hub</span>
 </header>
 
@@ -1540,31 +1531,29 @@ header span { color: #8899bb; font-size: 0.85rem; }
         <div class="detail-card-body" style="padding:20px 22px;">
           <div class="phase-timeline">
 
-            <div class="phase-block done-phase">
-              <div class="phase-rail"><div class="phase-badge">✓</div></div>
+            <div class="phase-block">
+              <div class="phase-rail"><div class="phase-badge">1</div></div>
               <div class="phase-body">
                 <div class="phase-head">
                   <span class="phase-name">Phase 1 &middot; Setup &amp; Architecture</span>
-                  <span class="phase-status status-done">Done</span>
                 </div>
                 <div class="phase-goal">Platform decided, architecture defined, all three components scaffolded against a live backend, team &amp; tools organised.</div>
                 <div class="phase-deliverables">
-                  <span class="phase-del done-del">Platform decision ✓</span>
-                  <span class="phase-del done-del">High-level architecture ✓</span>
-                  <span class="phase-del done-del">API contract (endpoint list) ✓</span>
-                  <span class="phase-del done-del">ER / data model ✓</span>
-                  <span class="phase-del done-del">Backend + Android + Web scaffold ✓</span>
-                  <span class="phase-del done-del">Team roles assigned ✓</span>
+                  <span class="phase-del">Platform decision</span>
+                  <span class="phase-del">High-level architecture</span>
+                  <span class="phase-del">API contract (endpoint list)</span>
+                  <span class="phase-del">ER / data model</span>
+                  <span class="phase-del">Backend + Android + Web scaffold</span>
+                  <span class="phase-del">Team roles assigned</span>
                 </div>
               </div>
             </div>
 
-            <div class="phase-block active-phase">
+            <div class="phase-block">
               <div class="phase-rail"><div class="phase-badge">2</div></div>
               <div class="phase-body">
                 <div class="phase-head">
                   <span class="phase-name">Phase 2 &middot; Requirements &amp; Design</span>
-                  <span class="phase-status status-active">In Progress</span>
                 </div>
                 <div class="phase-goal">Requirements formally documented. UML use-cases drive the test plan; class/sequence diagrams and personas complete.</div>
                 <div class="phase-deliverables">
@@ -1583,7 +1572,6 @@ header span { color: #8899bb; font-size: 0.85rem; }
               <div class="phase-body">
                 <div class="phase-head">
                   <span class="phase-name">Phase 3 &middot; Core Implementation</span>
-                  <span class="phase-status status-pending">Pending</span>
                 </div>
                 <div class="phase-goal">All three components working: backend API complete, Android citizen flow, Web staff dashboard.</div>
                 <div class="phase-deliverables">
@@ -1602,7 +1590,6 @@ header span { color: #8899bb; font-size: 0.85rem; }
               <div class="phase-body">
                 <div class="phase-head">
                   <span class="phase-name">Phase 4 &middot; Integration &amp; Testing</span>
-                  <span class="phase-status status-pending">Pending</span>
                 </div>
                 <div class="phase-goal">Components integrated end-to-end. Tests written and passing. Optional features added if time allows.</div>
                 <div class="phase-deliverables">
@@ -1621,7 +1608,6 @@ header span { color: #8899bb; font-size: 0.85rem; }
               <div class="phase-body">
                 <div class="phase-head">
                   <span class="phase-name">Phase 5 &middot; Docs, Report &amp; Presentation</span>
-                  <span class="phase-status status-pending">Pending</span>
                 </div>
                 <div class="phase-goal">All deliverables finalised and submitted by the deadline.</div>
                 <div class="phase-deliverables">
