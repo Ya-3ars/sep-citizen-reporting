@@ -35,7 +35,7 @@ it cannot silently return.
 
 ## 3. Test cases (derived from use-cases)
 
-> **TODO — pending use-cases (board #12).** The formal test cases will be written
+> **TODO — pending use-cases.** The formal test cases will be written
 > here once the UML use-case diagram is defined, since each test case is derived
 > directly from a use-case. The required format for every case is:
 > **ID · Vorbedingung (precondition) · Eingabedaten (input) · Aktion (action) · erwartetes Ergebnis (expected result).**
