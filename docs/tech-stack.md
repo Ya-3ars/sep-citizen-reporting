@@ -150,5 +150,18 @@ Verified against the actual project files (versions current as of this draft).
 
 ### Maps: Leaflet + OpenStreetMap (planned)
 - **What:** OpenStreetMap is free, open map data; Leaflet is a lightweight JS library to display interactive maps.
-- **Why:** Reports carry a map location (core requirement); the brief explicitly recommends this pair. Free, no API key, no usage limits (vs. Google Maps).
-- **For us:** Web dashboard shows report markers on a map; Android lets citizens pick a location. (Android may use a native map component instead of Leaflet — to be decided when we build the picker.)
+- **Why:** Reports carry a map location (core requirement); the brief explicitly recommends this pair. Free, no API key (vs. Google Maps, which requires paid billing credentials).
+- **For us:** Web dashboard shows report markers on a map; Android lets citizens pick a location. (Android may use a native map component — OSMDroid — instead of Leaflet; to be decided when we build the picker.)
+
+### External system interfaces (Schnittstellen)
+Identified at **specification time** — their constraints shape the architecture and must be planned early, not discovered during implementation. These are the third-party services the system depends on but does *not* control (distinct from our own REST API, which is the internal seam, not an external interface).
+
+| Interface | Used by | Protocol / data | Constraints & policy |
+|-----------|---------|-----------------|----------------------|
+| **OpenStreetMap tile servers** | Web (Leaflet), Android (OSMDroid) | Outbound HTTPS `GET` for raster tiles from `tile.openstreetmap.org`; response is PNG images (one-way, read-only) | No API key. Governed by the **OSM Tile Usage Policy**: valid `User-Agent`, no bulk downloading, and **OSM attribution must be shown** on the map. Free at our scale. |
+| **Nominatim** *(optional, deferred)* | Web + Android, only if address search is added | Outbound HTTPS `GET` for geocoding / reverse-geocoding (address ↔ coordinates), JSON | Stricter: **max 1 request/second**, required `User-Agent`. We plan click/tap-to-pin, which needs no geocoding — documented so the limit is known *if* we build address search. |
+| **Device GPS** | Android | Local OS location API (not a network call); reads current coordinates to pre-fill the report location | Requires runtime **location permission**; must degrade gracefully (manual pin) if denied. |
+
+- **Attribution requirement is a real deliverable:** the "© OpenStreetMap contributors" credit on every map view is a policy obligation, not optional polish.
+- **Failure handling:** none of these are on the critical path for saving a report. If tiles fail the form still submits; if GPS is denied the user pins manually. The only hard external dependency is our own backend.
+- **Why we flag this:** Dorrhauer's script treats external interfaces (*Schnittstellen*) as a specification-phase concern. Naming them now, with their usage limits and failure modes, is a direct contribution to the **Softwarearchitektur** grading dimension.

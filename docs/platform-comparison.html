@@ -360,7 +360,7 @@ header span { color: #8899bb; font-size: 0.85rem; }
           <div class="detail-card-body" style="padding:22px 24px;">
             <div style="font-size:1.6rem;margin-bottom:8px;">🏛</div>
             <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px;color:var(--hybrid);">Architecture</div>
-            <div style="font-size:0.84rem;color:var(--muted);line-height:1.5;">The chosen Hybrid system: 3-component diagram, backend class layers, SOLID review, API contract, data model — and the alternatives we rejected.</div>
+            <div style="font-size:0.84rem;color:var(--muted);line-height:1.5;">The chosen Hybrid system: 3-component diagram, backend class layers, SOLID review, API contract, external interfaces, data model — and the alternatives we rejected.</div>
           </div>
         </div>
         <div class="detail-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-view=&quot;requirements&quot;]').click()">
@@ -1084,6 +1084,62 @@ header span { color: #8899bb; font-size: 0.85rem; }
 
           <p style="font-size:0.78rem;color:var(--muted);margin:16px 0 0;line-height:1.55;">
             <strong>Public vs staff mirrors the two frontends:</strong> the Android app only ever calls the three <span class="auth-pub">public</span> endpoints (submit report, attach photo, view photo). Every <span class="auth-staff">staff</span> endpoint &mdash; list, edit, delete &mdash; is the web dashboard, gated behind login. This is the contract Yoana (Android) and Charlene (Web) build against while the backend is implemented in parallel.
+          </p>
+        </div>
+      </div>
+
+      <!-- External Interfaces -->
+      <div class="detail-card">
+        <div class="detail-card-header">External Interfaces <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· third-party systems we depend on &mdash; identified at specification time (Schnittstellen)</span></div>
+        <div class="detail-card-body" style="padding:24px 28px;">
+
+          <style>
+            .ext-tbl { width:100%;border-collapse:collapse;font-size:0.78rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px; }
+            .ext-tbl th { background:#f7f8fc;text-align:left;padding:8px 11px;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.05em;color:#8a8fa3;border-bottom:2px solid var(--border);vertical-align:bottom; }
+            .ext-tbl td { padding:9px 11px;border-bottom:1px solid #f0f0f4;vertical-align:top;line-height:1.45; }
+            .ext-tbl tr:last-child td { border-bottom:none; }
+            .ext-tbl code { font-size:0.73rem;background:#f4f4f8;padding:1px 5px;border-radius:4px; }
+            .ext-name { font-weight:700;color:var(--text);white-space:nowrap; }
+            .ext-opt { display:inline-block;font-size:0.6rem;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:6px;margin-left:5px;vertical-align:middle;letter-spacing:0.03em; }
+          </style>
+
+          <p style="font-size:0.84rem;line-height:1.6;margin:0 0 16px;color:var(--text);">
+            Besides our own REST API (the internal seam documented above), the system talks to a small number of <strong>external services we do not control</strong>. We identify them here during specification &mdash; their constraints (no API key, usage limits, attribution) shape the architecture and must be planned early, not discovered during implementation.
+          </p>
+
+          <table class="ext-tbl">
+            <thead>
+              <tr>
+                <th style="width:150px">Interface</th>
+                <th style="width:90px">Used by</th>
+                <th>Protocol &amp; data</th>
+                <th>Constraints &amp; policy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="ext-name">OpenStreetMap<br>tile servers</span></td>
+                <td>Web (via Leaflet)<br>Android (via OSMDroid)</td>
+                <td>Outbound HTTPS <code>GET</code> for raster map tiles from <code>tile.openstreetmap.org</code>. No request body; response is PNG tile images. One-way (we only read).</td>
+                <td>No API key. Subject to the <strong>OSM Tile Usage Policy</strong>: identify with a valid <code>User-Agent</code>, no bulk/heavy automated downloading, and <strong>display OSM attribution</strong> on the map. Free for a project of our scale.</td>
+              </tr>
+              <tr>
+                <td><span class="ext-name">Nominatim</span><span class="ext-opt">OPTIONAL</span></td>
+                <td>Web + Android (only if address search is built)</td>
+                <td>Outbound HTTPS <code>GET</code> for geocoding / reverse-geocoding (address &harr; coordinates), JSON response.</td>
+                <td>Stricter policy: <strong>max 1 request/second</strong>, required <code>User-Agent</code>, no heavy use. <strong>Deferred</strong> &mdash; our plan is click/tap-to-pin, which needs no geocoding. Documented so the limit is known <em>if</em> we add address search.</td>
+              </tr>
+              <tr>
+                <td><span class="ext-name">Device GPS</span></td>
+                <td>Android</td>
+                <td>Local OS location API (not a network call) &mdash; reads current coordinates to pre-fill the report location.</td>
+                <td>Requires the user's <strong>runtime location permission</strong>. Must degrade gracefully if denied: the citizen can still pin manually on the map.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p style="font-size:0.78rem;color:var(--muted);margin:0;line-height:1.55;">
+            <strong>Failure handling (planned):</strong> all three are non-critical to core submission. If OSM tiles fail to load the map shows a blank/offline grid but the form still submits; if GPS is unavailable the user pins manually. No external service is on the critical path for saving a report &mdash; the only hard dependency is our own backend.
           </p>
         </div>
       </div>
