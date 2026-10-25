@@ -6,9 +6,9 @@ before implementation so the test cases describe intended behaviour and act as t
 target the implementation is built toward. Test execution happens in the
 integration/QA phase once the code exists.
 
-This plan is the *Softwaretest* (dynamic) half of Verifikation & Validierung.
-- **Verifikation** — does the product meet the requirements?
-- **Validierung** — are the users (see personas) satisfied in their work environment?
+This plan is the *Softwaretest* (dynamic) half of Verification & Validation.
+- **Verification** — does the product meet the requirements?
+- **Validation** — are the users (see personas) satisfied in their work environment?
 
 ---
 
