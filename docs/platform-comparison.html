@@ -266,18 +266,23 @@ header span { color: #8899bb; font-size: 0.85rem; }
 /* ── PROJECT VIEW ── */
 .project-page { display: flex; flex-direction: column; gap: 28px; }
 
-/* sprint timeline */
-.sprint-timeline { display: flex; gap: 0; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-.sprint-block { flex: 1; padding: 16px 18px; border-right: 1px solid var(--border); position: relative; }
-.sprint-block:last-child { border-right: none; }
-.sprint-block.active-phase { background: #6c63ff08; }
-.sprint-num { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
-.sprint-name { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.sprint-goal { font-size: 0.75rem; color: var(--muted); line-height: 1.4; margin-bottom: 10px; }
-.sprint-deliverables { display: flex; flex-direction: column; gap: 4px; }
-.sprint-del { font-size: 0.72rem; color: #444; padding-left: 11px; position: relative; }
-.sprint-del::before { content: "·"; position: absolute; left: 2px; color: #aaa; }
-.sprint-status { display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 8px; margin-top: 10px; letter-spacing: 0.04em; }
+/* phase timeline */
+.phase-timeline { display: flex; flex-direction: column; gap: 10px; }
+.phase-block { display: grid; grid-template-columns: 56px 1fr; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; position: relative; }
+.phase-block.active-phase { background: #6c63ff08; border-color: #6c63ff55; box-shadow: 0 0 0 1px #6c63ff22; }
+.phase-block.done-phase { background: #f0fdf422; }
+.phase-rail { display: flex; flex-direction: column; align-items: center; }
+.phase-badge { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 800; background: #f1f5f9; color: #64748b; border: 2px solid var(--border); }
+.phase-block.active-phase .phase-badge { background: #6c63ff; color: #fff; border-color: #6c63ff; }
+.phase-block.done-phase .phase-badge { background: #dcfce7; color: #166534; border-color: #86efac; }
+.phase-body { min-width: 0; }
+.phase-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.phase-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+.phase-goal { font-size: 0.78rem; color: var(--muted); line-height: 1.45; margin-bottom: 10px; }
+.phase-deliverables { display: flex; flex-wrap: wrap; gap: 6px; }
+.phase-del { font-size: 0.72rem; color: #475569; background: #f7f8fc; border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; }
+.phase-del.done-del { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.phase-status { display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 3px 9px; border-radius: 8px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
 .status-done     { background: #dcfce7; color: #166534; }
 .status-active   { background: #6c63ff18; color: #6c63ff; }
 .status-pending  { background: #f1f5f9; color: #64748b; }
@@ -325,7 +330,7 @@ header span { color: #8899bb; font-size: 0.85rem; }
 
 <header>
   <h1>Platform Decision — SEP WS 2026/27</h1>
-  <span>Citizen Reporting App &nbsp;·&nbsp; Compare platform options for your team</span>
+  <span>Citizen Reporting App &nbsp;·&nbsp; SEP WS 2026/27 &nbsp;·&nbsp; design, requirements &amp; project hub</span>
 </header>
 
 <!-- TABS -->
@@ -973,7 +978,7 @@ header span { color: #8899bb; font-size: 0.85rem; }
             <path d="M310,49 C335,49 335,129 348,129" fill="none" stroke="#64748b" stroke-width="1.1" stroke-dasharray="4 3" marker-end="url(#bl-arr)"/>
           </svg>
           <p style="font-size:0.78rem;color:var(--muted);margin:14px 0 0;line-height:1.5;">
-            Solid arrows = layer dependency (each depends on the interface below). Dashed arrow = <code>ReportController</code> delegates photo uploads to <code>PhotoService</code>. This diagram will be formalised into the full UML class diagram in Sprint 2.
+            Solid arrows = layer dependency (each depends on the interface below). Dashed arrow = <code>ReportController</code> delegates photo uploads to <code>PhotoService</code>. This diagram will be formalised into the full UML class diagram in the Requirements &amp; Design phase.
           </p>
         </div>
       </div>
@@ -1403,7 +1408,7 @@ header span { color: #8899bb; font-size: 0.85rem; }
 
       <!-- Team -->
       <div class="detail-card">
-        <div class="detail-card-header">Team Roles &amp; Responsibilities <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· click a member to filter the task board</span></div>
+        <div class="detail-card-header">Team Roles &amp; Responsibilities <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· who owns what, across presentation &amp; report</span></div>
         <div class="detail-card-body" style="padding:0;">
           <table class="team-table">
             <thead>
@@ -1529,87 +1534,105 @@ header span { color: #8899bb; font-size: 0.85rem; }
         </div>
       </div>
 
-      <!-- Sprint timeline -->
+      <!-- Phase timeline -->
       <div class="detail-card">
-        <div class="detail-card-header">Phase Plan</div>
-        <div class="detail-card-body" style="padding:0;">
-          <div class="sprint-timeline">
+        <div class="detail-card-header">Phase Plan <span style="font-size:0.72rem;font-weight:400;color:var(--muted);margin-left:8px">· five milestone phases &mdash; the live board is grouped the same way</span></div>
+        <div class="detail-card-body" style="padding:20px 22px;">
+          <div class="phase-timeline">
 
-            <div class="sprint-block active-phase" data-sprint="Sprint 1">
-              <div class="sprint-num">Sprint 1</div>
-              <div class="sprint-name">Setup &amp; Architecture</div>
-              <div class="sprint-goal">Platform decided, architecture defined, team organised, tools agreed, product backlog created.</div>
-              <div class="sprint-deliverables">
-                <div class="sprint-del">Platform decision ✓</div>
-                <div class="sprint-del">High-level architecture</div>
-                <div class="sprint-del">API contract (endpoint list)</div>
-                <div class="sprint-del">ER / data model</div>
-                <div class="sprint-del">UML use-case diagram</div>
-                <div class="sprint-del">Product Backlog</div>
-                <div class="sprint-del">Team roles assigned</div>
+            <div class="phase-block done-phase">
+              <div class="phase-rail"><div class="phase-badge">✓</div></div>
+              <div class="phase-body">
+                <div class="phase-head">
+                  <span class="phase-name">Phase 1 &middot; Setup &amp; Architecture</span>
+                  <span class="phase-status status-done">Done</span>
+                </div>
+                <div class="phase-goal">Platform decided, architecture defined, all three components scaffolded against a live backend, team &amp; tools organised.</div>
+                <div class="phase-deliverables">
+                  <span class="phase-del done-del">Platform decision ✓</span>
+                  <span class="phase-del done-del">High-level architecture ✓</span>
+                  <span class="phase-del done-del">API contract (endpoint list) ✓</span>
+                  <span class="phase-del done-del">ER / data model ✓</span>
+                  <span class="phase-del done-del">Backend + Android + Web scaffold ✓</span>
+                  <span class="phase-del done-del">Team roles assigned ✓</span>
+                </div>
               </div>
-              <span class="sprint-status status-active">In Progress</span>
             </div>
 
-            <div class="sprint-block" data-sprint="Sprint 2">
-              <div class="sprint-num">Sprint 2</div>
-              <div class="sprint-name">Requirements &amp; Design</div>
-              <div class="sprint-goal">All requirements formally documented. UML diagrams, ER model, SOLID review complete.</div>
-              <div class="sprint-deliverables">
-                <div class="sprint-del">Lastenheft + Pflichtenheft</div>
-                <div class="sprint-del">Persona documents</div>
-                <div class="sprint-del">UML use-case diagram</div>
-                <div class="sprint-del">UML class diagram</div>
-                <div class="sprint-del">Sequence diagrams</div>
-                <div class="sprint-del">Detailed ER model</div>
-                <div class="sprint-del">SOLID architecture review</div>
+            <div class="phase-block active-phase">
+              <div class="phase-rail"><div class="phase-badge">2</div></div>
+              <div class="phase-body">
+                <div class="phase-head">
+                  <span class="phase-name">Phase 2 &middot; Requirements &amp; Design</span>
+                  <span class="phase-status status-active">In Progress</span>
+                </div>
+                <div class="phase-goal">Requirements formally documented. UML use-cases drive the test plan; class/sequence diagrams and personas complete.</div>
+                <div class="phase-deliverables">
+                  <span class="phase-del">Pflichtenheft (requirements spec)</span>
+                  <span class="phase-del">Personas (citizen + staff)</span>
+                  <span class="phase-del">UML use-case diagram</span>
+                  <span class="phase-del">UML class diagram</span>
+                  <span class="phase-del">Sequence diagrams</span>
+                  <span class="phase-del">Test plan (cases from use-cases)</span>
+                </div>
               </div>
-              <span class="sprint-status status-pending">Pending</span>
             </div>
 
-            <div class="sprint-block" data-sprint="Sprint 3">
-              <div class="sprint-num">Sprint 3</div>
-              <div class="sprint-name">Core Implementation</div>
-              <div class="sprint-goal">All three components working. Backend API complete, Android citizen flow, Web staff skeleton.</div>
-              <div class="sprint-deliverables">
-                <div class="sprint-del">Spring Boot REST API</div>
-                <div class="sprint-del">PostgreSQL schema + JPA entities</div>
-                <div class="sprint-del">Android: map + form + camera</div>
-                <div class="sprint-del">Web: report table + dashboard</div>
-                <div class="sprint-del">Photo upload + storage</div>
-                <div class="sprint-del">Staff login (session/JWT)</div>
+            <div class="phase-block">
+              <div class="phase-rail"><div class="phase-badge">3</div></div>
+              <div class="phase-body">
+                <div class="phase-head">
+                  <span class="phase-name">Phase 3 &middot; Core Implementation</span>
+                  <span class="phase-status status-pending">Pending</span>
+                </div>
+                <div class="phase-goal">All three components working: backend API complete, Android citizen flow, Web staff dashboard.</div>
+                <div class="phase-deliverables">
+                  <span class="phase-del">Spring Boot REST API</span>
+                  <span class="phase-del">JPA entities + schema</span>
+                  <span class="phase-del">Android: map + form + camera</span>
+                  <span class="phase-del">Web: report table + dashboard</span>
+                  <span class="phase-del">Photo upload + storage</span>
+                  <span class="phase-del">Staff login (JWT)</span>
+                </div>
               </div>
-              <span class="sprint-status status-pending">Pending</span>
             </div>
 
-            <div class="sprint-block" data-sprint="Sprint 4">
-              <div class="sprint-num">Sprint 4</div>
-              <div class="sprint-name">Integration &amp; Testing</div>
-              <div class="sprint-goal">All components integrated end-to-end. Tests written and passing. Optional features added if time allows.</div>
-              <div class="sprint-deliverables">
-                <div class="sprint-del">End-to-end integration test</div>
-                <div class="sprint-del">Unit tests (backend services)</div>
-                <div class="sprint-del">User acceptance test (UAT)</div>
-                <div class="sprint-del">Bug fixes from testing</div>
-                <div class="sprint-del">Optional: GPS auto-fill, status tracking</div>
-                <div class="sprint-del">Demo script prepared</div>
+            <div class="phase-block">
+              <div class="phase-rail"><div class="phase-badge">4</div></div>
+              <div class="phase-body">
+                <div class="phase-head">
+                  <span class="phase-name">Phase 4 &middot; Integration &amp; Testing</span>
+                  <span class="phase-status status-pending">Pending</span>
+                </div>
+                <div class="phase-goal">Components integrated end-to-end. Tests written and passing. Optional features added if time allows.</div>
+                <div class="phase-deliverables">
+                  <span class="phase-del">End-to-end integration test</span>
+                  <span class="phase-del">Unit tests (backend services)</span>
+                  <span class="phase-del">User acceptance test (UAT)</span>
+                  <span class="phase-del">Bug fixes from testing</span>
+                  <span class="phase-del">Optional: GPS auto-fill, status tracking</span>
+                  <span class="phase-del">Demo script prepared</span>
+                </div>
               </div>
-              <span class="sprint-status status-pending">Pending</span>
             </div>
 
-            <div class="sprint-block" data-sprint="Sprint 5">
-              <div class="sprint-num">Sprint 5</div>
-              <div class="sprint-name">Docs, Report &amp; Presentation</div>
-              <div class="sprint-goal">All deliverables finalised and submitted.</div>
-              <div class="sprint-deliverables">
-                <div class="sprint-del">Written report (~20 pages)</div>
-                <div class="sprint-del">Technical documentation</div>
-                <div class="sprint-del">Presentation slides (PDF)</div>
-                <div class="sprint-del">Source code ZIP</div>
-                <div class="sprint-del">Live demo rehearsal</div>
-                <div class="sprint-del">Submission 08.01.2027</div>
+            <div class="phase-block">
+              <div class="phase-rail"><div class="phase-badge">5</div></div>
+              <div class="phase-body">
+                <div class="phase-head">
+                  <span class="phase-name">Phase 5 &middot; Docs, Report &amp; Presentation</span>
+                  <span class="phase-status status-pending">Pending</span>
+                </div>
+                <div class="phase-goal">All deliverables finalised and submitted by the deadline.</div>
+                <div class="phase-deliverables">
+                  <span class="phase-del">Written report (~20 pages)</span>
+                  <span class="phase-del">Technical documentation</span>
+                  <span class="phase-del">Presentation slides (PDF)</span>
+                  <span class="phase-del">Source code ZIP</span>
+                  <span class="phase-del">Live demo rehearsal</span>
+                  <span class="phase-del">Submission 08.01.2027</span>
+                </div>
               </div>
-              <span class="sprint-status status-pending">Pending</span>
             </div>
 
           </div>
@@ -1781,7 +1804,7 @@ const TECH_DATA = {
     category: 'Library · Authentication & Authorisation',
     what: 'Spring Security is the standard security framework for Spring applications. It handles authentication (who are you?) and authorisation (what are you allowed to do?) via a filter chain that intercepts every incoming HTTP request.',
     why: 'Staff-only endpoints (edit, delete) must be protected — citizens should not be able to call them. Spring Security makes it easy to require a valid login session for specific URL patterns and reject all others. Without it, anyone who knows the API URL could delete reports.',
-    how: 'Add a SecurityConfig class that extends WebSecurityConfigurerAdapter (or uses the newer lambda DSL). Define which endpoints are public (POST /api/reports for citizen submissions) and which require ROLE_STAFF (all admin endpoints). Use HTTP Basic or session-based auth for simplicity.',
+    how: 'Add a SecurityConfig class that defines a SecurityFilterChain bean using the lambda DSL (the WebSecurityConfigurerAdapter base class was removed in Spring Security 6, which Boot 3.3.5 uses). Declare which endpoints are public (GET /api/reports and POST /api/reports for citizen submissions) and which require ROLE_STAFF (edit/delete). Staff auth is planned via JWT tokens.',
     install: '# Already included if you selected "Spring Security"\n# at start.spring.io. Otherwise add to pom.xml:\n<dependency>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-security</artifactId>\n</dependency>\n\n# Warning: adding Spring Security locks ALL endpoints\n# by default. Configure your SecurityConfig immediately.'
   },
   'spring-jpa': {
